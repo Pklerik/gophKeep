@@ -3,9 +3,9 @@ module github.com/Pklerik/gophKeep
 go 1.25.1
 
 require (
+	github.com/go-chi/chi/v5 v5.2.4
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/mux v1.8.1
 	github.com/mattn/go-sqlite3 v1.14.18
 	github.com/stretchr/testify v1.8.1
 	go.uber.org/zap v1.27.1

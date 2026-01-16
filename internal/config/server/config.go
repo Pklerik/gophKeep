@@ -5,13 +5,15 @@ import (
 	"flag"
 	"os"
 	"time"
+
+	"github.com/Pklerik/gophKeep/internal/auth"
 )
 
 // Config represents server configuration.
 type Config struct {
 	ServerAddress string        `json:"server_address"`
 	DatabasePath  string        `json:"database_path"`
-	SecretKey     string        `json:"secret_key"`
+	secretKey     string        `json:"-"`
 	LogLevel      string        `json:"log_level"`
 	Timeout       time.Duration `json:"timeout"`
 	TLS           bool          `json:"enable_https"`
@@ -24,7 +26,7 @@ func LoadConfig() Config {
 	cfg := Config{
 		ServerAddress: "localhost:8080",
 		DatabasePath:  "./gophkeeper.db",
-		SecretKey:     "default-secret-key",
+		secretKey:     "default-secret-key",
 		LogLevel:      "info",
 		Timeout:       30 * time.Second,
 		TLS:           false,
@@ -38,7 +40,7 @@ func LoadConfig() Config {
 		cfg.DatabasePath = dbPath
 	}
 	if key := os.Getenv("SECRET_KEY"); key != "" {
-		cfg.SecretKey = key
+		cfg.secretKey = key
 	}
 	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
 		cfg.LogLevel = logLevel
@@ -50,12 +52,15 @@ func LoadConfig() Config {
 	// Load from command line flags
 	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "Server address")
 	flag.StringVar(&cfg.DatabasePath, "d", cfg.DatabasePath, "Database path")
-	flag.StringVar(&cfg.SecretKey, "k", cfg.SecretKey, "Secret key")
+	flag.StringVar(&cfg.secretKey, "k", cfg.secretKey, "Secret key")
 	flag.StringVar(&cfg.LogLevel, "l", cfg.LogLevel, "Log level")
 	flag.BoolVar(&cfg.TLS, "s", cfg.TLS, "Enable TLS")
 	flag.StringVar(&cfg.CertFile, "c", "", "Certificate file (for TLS)")
 	flag.StringVar(&cfg.KeyFile, "p", "", "Key file (for TLS)")
 	flag.Parse()
+
+	//
+	auth.SetSecretKey(cfg.secretKey)
 
 	return cfg
 }

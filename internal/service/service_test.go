@@ -11,6 +11,7 @@ import (
 	"github.com/Pklerik/gophKeep/internal/dbinit"
 	"github.com/Pklerik/gophKeep/internal/models"
 	"github.com/Pklerik/gophKeep/internal/repository"
+	mysqlrepository "github.com/Pklerik/gophKeep/internal/repository/mysql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -21,8 +22,8 @@ type ServiceTestSuite struct {
 	db            *sql.DB
 	userService   *UserService
 	secretService *SecretService
-	userRepo      *repository.UserRepository
-	secretRepo    *repository.SecretRepository
+	userRepo      repository.UserRepositoryInterface
+	secretRepo    repository.SecretRepositoryInterface
 }
 
 // SetupSuite sets up the test suite.
@@ -32,8 +33,8 @@ func (suite *ServiceTestSuite) SetupSuite() {
 	suite.NoError(err)
 	suite.db = db
 
-	suite.userRepo = repository.NewUserRepository(db)
-	suite.secretRepo = repository.NewSecretRepository(db)
+	suite.userRepo = mysqlrepository.NewUserRepository(db)
+	suite.secretRepo = mysqlrepository.NewSecretRepository(db)
 
 	suite.userService = NewUserService(suite.userRepo)
 	suite.secretService = NewSecretService(suite.secretRepo)

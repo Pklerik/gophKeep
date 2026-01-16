@@ -1,5 +1,5 @@
-// Package repository_test tests the repository package.
-package repository
+// Package mysqlrepository_test tests the repository package.
+package mysqlrepository_test
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/Pklerik/gophKeep/internal/dbinit"
 	"github.com/Pklerik/gophKeep/internal/models"
+	mysqlrepository "github.com/Pklerik/gophKeep/internal/repository/mysql"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -17,8 +18,8 @@ import (
 // RepositoryTestSuite represents the test suite for repositories.
 type RepositoryTestSuite struct {
 	suite.Suite
-	userRepo   *UserRepository
-	secretRepo *SecretRepository
+	userRepo   *mysqlrepository.UserRepository
+	secretRepo *mysqlrepository.SecretRepository
 }
 
 // SetupSuite sets up the test suite.
@@ -27,8 +28,8 @@ func (suite *RepositoryTestSuite) SetupSuite() {
 	db, err := dbinit.InitDB(tmpFile)
 	suite.NoError(err)
 
-	suite.userRepo = NewUserRepository(db)
-	suite.secretRepo = NewSecretRepository(db)
+	suite.userRepo = mysqlrepository.NewUserRepository(db)
+	suite.secretRepo = mysqlrepository.NewSecretRepository(db)
 
 	suite.T().Cleanup(func() {
 		db.Close()

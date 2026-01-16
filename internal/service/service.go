@@ -14,11 +14,11 @@ import (
 
 // UserService handles user-related business logic.
 type UserService struct {
-	repo *repository.UserRepository
+	repo repository.UserRepositoryInterface
 }
 
 // NewUserService creates a new user service.
-func NewUserService(repo *repository.UserRepository) *UserService {
+func NewUserService(repo repository.UserRepositoryInterface) *UserService {
 	return &UserService{repo: repo}
 }
 
@@ -83,11 +83,11 @@ func (s *UserService) GetUser(userID string) (*models.User, error) {
 
 // SecretService handles secret-related business logic.
 type SecretService struct {
-	repo *repository.SecretRepository
+	repo repository.SecretRepositoryInterface
 }
 
 // NewSecretService creates a new secret service.
-func NewSecretService(repo *repository.SecretRepository) *SecretService {
+func NewSecretService(repo repository.SecretRepositoryInterface) *SecretService {
 	return &SecretService{repo: repo}
 }
 

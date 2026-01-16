@@ -4,6 +4,7 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -12,9 +13,21 @@ import (
 const (
 	// TokenDuration defines how long the JWT token is valid.
 	TokenDuration = 24 * time.Hour
-	// SecretKey is the secret key for signing JWT tokens (in production, use environment variable).
-	SecretKey = "gophkeeper-secret-key-please-change-in-production"
 )
+
+var (
+	// secretKey is the secret key for signing JWT tokens (in production, use environment variable).
+	secretKey string
+	once      sync.Once
+)
+
+// SetSecretKey sets the secret key for JWT token signing.
+func SetSecretKey(key string) {
+	// Ensure the secret key is set only once.
+	once.Do(func() {
+		secretKey = key
+	})
+}
 
 // Claims represents the custom claims for JWT token.
 type Claims struct {
@@ -36,7 +49,7 @@ func GenerateToken(userID string) (string, time.Time, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(SecretKey))
+	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("failed to sign token: %w", err)
 	}
@@ -52,7 +65,7 @@ func VerifyToken(tokenString string) (*Claims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(SecretKey), nil
+		return []byte(secretKey), nil
 	})
 
 	if err != nil {
