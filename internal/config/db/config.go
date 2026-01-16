@@ -16,7 +16,7 @@ var (
 	// ErrNotImplemented DBConfigurer instance is not implemented.
 	ErrNotImplemented = errors.New("DBConfigurer instance is not implemented")
 	// ErrEmptyDatabaseConfig Conf is empty.
-	ErrEmptyDatabaseConfig = errors.New("Conf is empty")
+	ErrEmptyDatabaseConfig = errors.New("Config is empty")
 	// ErrSetDefault unable to set defaults.
 	ErrSetDefault = errors.New("unable to set defaults")
 )

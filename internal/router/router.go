@@ -2,10 +2,11 @@ package router
 
 import (
 	"context"
-	"flag"
 	"net/http"
+
+	config "github.com/Pklerik/gophKeep/internal/config/server"
 )
 
 type Router interface {
-	ConfigureRouter(context.Context, flag.FlagSet) (http.Handler, error)
+	ConfigureRouter(context.Context, config.Config) (http.Handler, error)
 }

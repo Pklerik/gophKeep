@@ -6,7 +6,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"syscall"
 
+	"golang.org/x/term"
+
+	"github.com/Pklerik/gophKeep/internal/client"
+	"github.com/Pklerik/gophKeep/internal/client/httpclient"
 	config "github.com/Pklerik/gophKeep/internal/config/client"
 	"github.com/Pklerik/gophKeep/internal/logger"
 	"github.com/Pklerik/gophKeep/internal/models"
@@ -14,14 +19,14 @@ import (
 
 // App represents the client application.
 type App struct {
-	client *HTTPClient
+	client client.IClient
 	config config.Config
 }
 
 // NewApp creates a new client application.
 func NewApp(cfg config.Config) *App {
 	return &App{
-		client: NewHTTPClient(cfg.ServerURL, cfg.Timeout),
+		client: httpclient.NewHTTPClient(cfg.ServerURL, cfg.Timeout),
 		config: cfg,
 	}
 }
@@ -81,8 +86,8 @@ func (a *App) handleRegister(reader *bufio.Reader) {
 	username, _ := reader.ReadString('\n')
 	username = strings.TrimSpace(username)
 
-	fmt.Print("Password: ")
-	password, _ := reader.ReadString('\n')
+	password := passwordPrompt("Enter password:")
+	fmt.Println() // New line after password input
 	password = strings.TrimSpace(password)
 
 	resp, err := a.client.Register(username, password)
@@ -101,8 +106,8 @@ func (a *App) handleLogin(reader *bufio.Reader) {
 	username, _ := reader.ReadString('\n')
 	username = strings.TrimSpace(username)
 
-	fmt.Print("Password: ")
-	password, _ := reader.ReadString('\n')
+	password := passwordPrompt("Enter password:")
+	fmt.Println() // New line after password input
 	password = strings.TrimSpace(password)
 
 	resp, err := a.client.Login(username, password)
@@ -138,9 +143,29 @@ func (a *App) handleListSecrets() {
 
 // handleAddSecret adds a new secret.
 func (a *App) handleAddSecret(reader *bufio.Reader) {
-	fmt.Print("Type (credentials/text/binary/card): ")
-	secretType, _ := reader.ReadString('\n')
-	secretType = strings.TrimSpace(secretType)
+	fmt.Println("\t1. credentials")
+	fmt.Println("\t2. text")
+	fmt.Println("\t3. binary")
+	fmt.Println("\t4. card")
+	fmt.Print("Choose secret type (credentials/text/binary/card): ")
+
+	choice, _ := reader.ReadString('\n')
+	choice = strings.TrimSpace(choice)
+
+	var secretType models.SecretType
+	switch choice {
+	case "1":
+		secretType = models.SecretTypeCredentials
+	case "2":
+		secretType = models.SecretTypeText
+	case "3":
+		secretType = models.SecretTypeBinary
+	case "4":
+		secretType = models.SecretTypeCard
+	default:
+		fmt.Println("Invalid secret type")
+		return
+	}
 
 	fmt.Print("Title: ")
 	title, _ := reader.ReadString('\n')
@@ -227,4 +252,21 @@ func (a *App) handleDeleteSecret(reader *bufio.Reader) {
 	}
 
 	fmt.Println("Secret deleted successfully!")
+}
+
+// passwordPrompt displays a label and securely reads a password from the terminal.
+func passwordPrompt(label string) string {
+	fmt.Fprint(os.Stderr, label+" ") // Print label to stderr to keep stdout clean
+
+	// ReadPassword disables terminal echo and reads input until a newline
+	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+
+	if err != nil {
+		// Handle errors as appropriate for your application
+		fmt.Printf("\nError reading password: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println() // Print a newline after input
+	return string(bytePassword)
 }

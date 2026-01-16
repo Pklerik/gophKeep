@@ -9,7 +9,7 @@ import (
 
 	config "github.com/Pklerik/gophKeep/internal/config/server"
 	"github.com/Pklerik/gophKeep/internal/dbinit"
-	"github.com/Pklerik/gophKeep/internal/handler"
+	handler "github.com/Pklerik/gophKeep/internal/handler/server"
 	"github.com/Pklerik/gophKeep/internal/logger"
 	"github.com/Pklerik/gophKeep/internal/middleware"
 	"github.com/Pklerik/gophKeep/internal/repository"

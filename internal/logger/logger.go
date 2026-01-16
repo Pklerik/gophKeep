@@ -25,7 +25,6 @@ package logger
 import (
 	"fmt"
 	"net/http"
-	"sync"
 
 	"go.uber.org/zap"
 )
@@ -39,7 +38,6 @@ var (
 	Sugar *zap.SugaredLogger
 
 	config zap.Config
-	once   sync.Once
 )
 
 // Initialize инициализирует синглтон логера с необходимым уровнем логирования.

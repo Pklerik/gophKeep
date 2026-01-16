@@ -1,5 +1,4 @@
-// Package client provides HTTP client for communicating with the GophKeeper server.
-package client
+package httpclient
 
 import (
 	"bytes"

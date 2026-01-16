@@ -78,47 +78,28 @@ fmt:
 
 vet:
 	@echo "Running go vet..."
-	@go vet ./...
+	@go vet -vettool=$$(which statictest) ./...
 	@echo "✓ Vet passed"
 
-lint: fmt vet
+staticcheck:
+	@echo "Running staticcheck..."
+	@staticcheck ./...
+	@echo "✓ Staticcheck passed"
+
+cilint:
+	@echo "Running golangci-lint..."
+	@golangci-lint run ./...
+	@echo "✓ Golangci-lint passed"
+
+lint: fmt vet staticcheck cilint
 	@echo "✓ Lint checks passed"
+	
 	go tool pprof -http :9000 profiles/mem.out
 
 pprof-cpu:
 	go tool pprof -http :9000 profiles/cpu.out
 
-lint:
-	echo "================Go vet=================="
-	go vet -vettool=$$(which statictest) ./...
-	echo "============Go statickcheck============="
-	staticcheck ./...
-	echo "==============Go Golint================="
-	golangci-lint run ./...
-
-fdl:
-	filedailgment --fix ./...
-
-godot:
-	godot -w ./
-
-run:
-	go run $(pwd)/cmd/gophkeep/main.go
-
-build:
-	go build -o ./cmd/gophkeep/gophkeep ./cmd/gophkeep/.
-
-check_new:
-	echo "To Do"
-	
 # example make a iter=5 for run 1-5ths iteration
 mock:
-	mockgen -source=internal/repository/repository.go -destination=internal/repository/mocks/mock_links_repo.go -package=mocks
-	mockgen -source=internal/service/service.go -destination=internal/service/mocks/mock_links_service.go -package=mocks
-	mockgen -source=internal/config/config.go -destination=internal/config/mocks/mock_links_config.go -package=mocks
-
-protogen:
-	protoc --go_out=. --go-grpc_out=. \
-	--go-grpc_opt=paths=source_relative --go_opt=paths=source_relative \
-	--go_opt=default_api_level=API_OPAQUE \
-	./api/proto/gophkeep.proto
+	mockgen -source=internal/repository/repository.go -destination=internal/repository/mocks/mock_repo.go -package=mocks
+	mockgen -source=internal/client/client.go -destination=internal/client/mocks/mock_client.go -package=mocks
