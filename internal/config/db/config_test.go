@@ -2,6 +2,7 @@
 package config
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
@@ -177,4 +178,83 @@ func Test_getDBSpec(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUnmarshalText_Empty(t *testing.T) {
+	var c Config
+
+	err := c.UnmarshalText([]byte(""))
+	if !assert.Error(t, err) {
+		t.Fatalf("expected error for empty input")
+	}
+
+	// UnmarshalText wraps the underlying Set error
+	if !errors.Is(err, ErrEmptyDatabaseConfig) {
+		t.Fatalf("expected ErrEmptyDatabaseConfig, got %v", err)
+	}
+}
+
+func TestUnmarshalText_Valid(t *testing.T) {
+	var c Config
+	input := "postgresql://test_user:test_password@localhost:5432/test_db?search_path=test_schema"
+
+	err := c.UnmarshalText([]byte(input))
+	assert.NoError(t, err)
+	assert.Equal(t, input, c.RawString)
+	assert.Contains(t, c.String(), "DSN:")
+}
+
+func TestGetConnString(t *testing.T) {
+	c := Config{
+		User:     "u",
+		Password: "p",
+		Database: "db",
+		Host:     "h",
+		Port:     "1",
+	}
+
+	cs := c.GetConnString()
+	assert.Contains(t, cs, "user=u")
+	assert.Contains(t, cs, "password=p")
+	assert.Contains(t, cs, "dbname=db")
+	assert.Contains(t, cs, "host=h")
+	assert.Contains(t, cs, "port=1")
+
+	c.Options = Options{"search_path": "gophkeep", "opt": "val"}
+	cs2 := c.GetConnString()
+	assert.Contains(t, cs2, "search_path=gophkeep")
+	assert.Contains(t, cs2, "opt=val")
+}
+
+func TestSetDefaultAndErr(t *testing.T) {
+	c := Config{Options: Options{}}
+	err := c.SetDefault()
+	assert.NoError(t, err)
+	assert.Equal(t, "gophkeep", c.Options["search_path"])
+
+	// ErrNotValidDBConf formatting
+	e := ErrNotValidDBConf{fields: []string{"User"}}
+	assert.Contains(t, e.Error(), "User")
+}
+
+func TestValidBehavior(t *testing.T) {
+	c := &Config{}
+	err := c.Valid()
+	if assert.Error(t, err) {
+		var e ErrNotValidDBConf
+		assert.ErrorAs(t, err, &e)
+		assert.Contains(t, err.Error(), "User")
+	}
+}
+
+func TestGetUserAndGetOptions(t *testing.T) {
+	c := Config{User: "tester", Options: Options{"k": "v"}}
+	assert.Equal(t, "tester", c.GetUser())
+	assert.Equal(t, Options{"k": "v"}, c.GetOptions())
+}
+
+func Test_getOptions_EmptyValue(t *testing.T) {
+	s := "postgresql://u:p@h:1/db?flag"
+	opts := getOptions(s)
+	assert.Equal(t, "", opts["flag"])
 }
