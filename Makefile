@@ -1,4 +1,4 @@
-.PHONY: build server client test coverage bench clean help install
+.PHONY: build server client test coverage bench clean help install docker-up docker-down docker-logs
 
 # Build variables
 BINARY_SERVER = gophkeeper-server
@@ -19,6 +19,12 @@ help:
 	@echo "  make bench          - Run benchmarks"
 	@echo "  make clean          - Remove built binaries"
 	@echo "  make install        - Install binaries"
+	@echo ""
+	@echo "Docker targets:"
+	@echo "  make docker-up      - Start PostgreSQL and server with Docker Compose"
+	@echo "  make docker-down    - Stop and remove Docker containers"
+	@echo "  make docker-logs    - View Docker container logs"
+	@echo "  make docker-build   - Build Docker image"
 	@echo ""
 
 build: server client
@@ -93,7 +99,35 @@ cilint:
 
 lint: fmt vet staticcheck cilint
 	@echo "✓ Lint checks passed"
-	
+
+docker-build:
+	@echo "Building Docker image..."
+	@docker-compose build
+	@echo "✓ Docker image built"
+
+docker-up:
+	@echo "Starting PostgreSQL and GophKeeper server..."
+	@docker-compose up -d
+	@echo "✓ Services started"
+	@echo "  PostgreSQL: localhost:5432"
+	@echo "  Server: http://localhost:8080"
+	@echo ""
+	@echo "Connect with: psql -h localhost -U gophkeeper -d gophkeeper"
+
+docker-down:
+	@echo "Stopping services..."
+	@docker-compose down
+	@echo "✓ Services stopped"
+
+docker-logs:
+	@docker-compose logs -f
+
+docker-clean:
+	@echo "Removing containers and volumes..."
+	@docker-compose down -v
+	@echo "✓ Docker resources cleaned"
+
+pprof-mem:
 	go tool pprof -http :9000 profiles/mem.out
 
 pprof-cpu:

@@ -2,7 +2,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
@@ -26,10 +25,8 @@ func main() {
 
 	switch command {
 	case "server":
-		flag.CommandLine.Parse(os.Args[2:])
 		serverCmd.Run()
 	case "client":
-		flag.CommandLine.Parse(os.Args[2:])
 		clientCmd.Run()
 	case "version":
 		fmt.Printf("GophKeeper version %s (built at %s)\n", Version, BuildTime)
@@ -52,16 +49,19 @@ Commands:
   help         Show this help message
 
 Server options:
-  -a string    Server address (default "localhost:8080")
-  -d string    Database path (default "./gophkeeper.db")
-  -s           Enable TLS/HTTPS
-  -c string    Certificate file (for TLS)
-  -p string    Key file (for TLS)
+  -a    string    Server address (default "localhost:8080")
+  -d    string    Database path (default "./gophkeeper.db")
+  --dsn string    Database URL
+  -k    string    Secret key for authentication
+  -l    string    Log level
+  -t    duration  Set timeout (e.g., 30s, 1m)
+  -s              Enable TLS/HTTPS
+  -c    string    Certificate file (for TLS)
+  -p    string    Key file (for TLS)
 
 Client options:
-  -u string    Server URL (default "http://localhost:8080")
-  -d string    Client database path
-
+  -u    string    Server URL (default "http://localhost:8080")
+  -d    string    Client database path
 Examples:
   gophkeeper server -a 0.0.0.0:8080
   gophkeeper client -u http://localhost:8080

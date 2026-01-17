@@ -41,7 +41,7 @@ func (sr *ServerRouter) ConfigureRouter(ctx context.Context, cfg config.Config) 
 		userRepo   repository.UserRepositoryInterface
 		secretRepo repository.SecretRepositoryInterface
 	)
-	if strings.Contains(cfg.DatabasePath, "postgres") {
+	if strings.Contains(cfg.DatabaseURL.Dialect, "postgres") {
 		userRepo = postgresrepository.NewUserRepository(db)
 		secretRepo = postgresrepository.NewSecretRepository(db)
 	} else {

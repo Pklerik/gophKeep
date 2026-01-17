@@ -3,55 +3,42 @@ package server
 
 import (
 	"flag"
-	"os"
+	"log"
 	"time"
 
 	"github.com/Pklerik/gophKeep/internal/auth"
+	dbconf "github.com/Pklerik/gophKeep/internal/config/db"
+	"github.com/caarlos0/env/v11"
 )
 
 // Config represents server configuration.
 type Config struct {
-	ServerAddress string        `json:"server_address"`
-	DatabasePath  string        `json:"database_path"`
-	secretKey     string        `json:"-"`
-	LogLevel      string        `json:"log_level"`
-	Timeout       time.Duration `json:"timeout"`
-	TLS           bool          `json:"enable_https"`
-	CertFile      string        `json:"cert_file"`
-	KeyFile       string        `json:"key_file"`
+	ServerAddress string        `json:"server_address" env:"SERVER_ADDRESS"`
+	DatabasePath  string        `json:"database_path" env:"DATABASE_PATH"`
+	DatabaseURL   dbconf.Config `json:"database_url" env:"DATABASE_URL"`
+	secretKey     string        `json:"-" env:"SECRET_KEY"`
+	LogLevel      string        `json:"log_level" env:"LOG_LEVEL"`
+	Timeout       time.Duration `json:"timeout" env:"TIMEOUT"`
+	TLS           bool          `json:"enable_https" env:"ENABLE_HTTPS"`
+	CertFile      string        `json:"cert_file" env:"CERT_FILE"`
+	KeyFile       string        `json:"key_file" env:"KEY_FILE"`
 }
 
 // LoadConfig loads server configuration from environment variables and flags.
 func LoadConfig() Config {
 	cfg := Config{
-		ServerAddress: "localhost:8080",
-		DatabasePath:  "./gophkeeper.db",
-		secretKey:     "default-secret-key",
-		LogLevel:      "info",
-		Timeout:       30 * time.Second,
-		TLS:           false,
-	}
-
-	// Load from environment variables
-	if addr := os.Getenv("SERVER_ADDRESS"); addr != "" {
-		cfg.ServerAddress = addr
-	}
-	if dbPath := os.Getenv("DATABASE_PATH"); dbPath != "" {
-		cfg.DatabasePath = dbPath
-	}
-	if key := os.Getenv("SECRET_KEY"); key != "" {
-		cfg.secretKey = key
-	}
-	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
-		cfg.LogLevel = logLevel
-	}
-	if tls := os.Getenv("ENABLE_HTTPS"); tls == "true" {
-		cfg.TLS = true
+		// ServerAddress: "localhost:8080",
+		DatabasePath: "./gophkeeper.db",
+		secretKey:    "default-secret-key",
+		LogLevel:     "info",
+		Timeout:      30 * time.Second,
 	}
 
 	// Load from command line flags
 	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "Server address")
 	flag.StringVar(&cfg.DatabasePath, "d", cfg.DatabasePath, "Database path")
+	flag.Var(&cfg.DatabaseURL, "dsn", "Database URL")
+	flag.DurationVar(&cfg.Timeout, "t", cfg.Timeout, "Set timeout")
 	flag.StringVar(&cfg.secretKey, "k", cfg.secretKey, "Secret key")
 	flag.StringVar(&cfg.LogLevel, "l", cfg.LogLevel, "Log level")
 	flag.BoolVar(&cfg.TLS, "s", cfg.TLS, "Enable TLS")
@@ -59,7 +46,13 @@ func LoadConfig() Config {
 	flag.StringVar(&cfg.KeyFile, "p", "", "Key file (for TLS)")
 	flag.Parse()
 
-	//
+	// Load from environment variables
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Set secret key for authentication
 	auth.SetSecretKey(cfg.secretKey)
 
 	return cfg

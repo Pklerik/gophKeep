@@ -35,8 +35,10 @@ var (
 	Log *zap.Logger = zap.NewNop()
 
 	// Sugar *zap.SugaredLogger.
-	Sugar *zap.SugaredLogger
+	// Предоставляет удобный интерфейс для логирования с форматированием.
+	Sugar *zap.SugaredLogger = Log.Sugar()
 
+	// config хранит конфигурацию логера.
 	config zap.Config
 )
 
