@@ -47,13 +47,13 @@ func LoadConfig() Config {
 	flag.StringVar(&cfg.KeyFile, "p", "", "Key file (for TLS)")
 	flag.CommandLine.Parse(os.Args[2:])
 
-	// Load from environment variables
+	// Load from environment variables rewriting flag values if exists.
 	err := env.Parse(&cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Set secret key for authentication
+	// Set secret key for authentication.
 	auth.SetSecretKey(cfg.secretKey)
 
 	return cfg

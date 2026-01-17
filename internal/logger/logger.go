@@ -30,21 +30,20 @@ import (
 )
 
 var (
-	// Log будет доступен всему коду как синглтон.
-	// По умолчанию установлен no-op-логер, который не выводит никаких сообщений.
+	// Log will be available across the codebase as a singleton.
+	// By default a no-op logger is set which does not output any messages.
 	Log *zap.Logger = zap.NewNop()
 
-	// Sugar *zap.SugaredLogger.
-	// Предоставляет удобный интерфейс для логирования с форматированием.
+	// Sugar is a *zap.SugaredLogger providing a convenient formatted logging interface.
 	Sugar *zap.SugaredLogger = Log.Sugar()
 
-	// config хранит конфигурацию логера.
+	// config stores the logger configuration.
 	config zap.Config
 )
 
-// Initialize инициализирует синглтон логера с необходимым уровнем логирования.
+// Initialize initializes the singleton logger with the specified logging level.
 func Initialize(level string) error {
-	// преобразуем текстовый уровень логирования в zap.AtomicLevel
+	// parse textual log level to zap.AtomicLevel
 	lvl, err := zap.ParseAtomicLevel(level)
 	if err != nil {
 		return fmt.Errorf("Initialize: %w", err)
@@ -59,19 +58,19 @@ func Initialize(level string) error {
 		ErrorOutputPaths: []string{"stderr"},
 	}
 
-	// создаём логер на основе конфигурации
+	// build logger from configuration
 	zl, err := config.Build()
 	if err != nil {
 		return fmt.Errorf("Initialize: %w", err)
 	}
-	// устанавливаем синглтон
+	// set the singleton
 	Log = zl
 	Sugar = Log.Sugar()
 
 	return nil
 }
 
-// RequestLogger — middleware-логер для входящих HTTP-запросов.
+// RequestLogger is a middleware logger for incoming HTTP requests.
 func RequestLogger(h http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		Log.Debug("got incoming HTTP request",

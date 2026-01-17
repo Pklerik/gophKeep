@@ -231,7 +231,7 @@ func (dbc *Config) GetOptions() Options {
 // Valid return is (dbc *Conf) is valid config.
 func (dbc *Config) Valid() error {
 	var err = ErrNotValidDBConf{
-		// Количество полей равно количеству таковых а Conf.
+		// Number of fields matching expected count in Config.
 		fields: make([]string, 0, 4),
 	}
 
