@@ -4,6 +4,7 @@ package server
 import (
 	"flag"
 	"log"
+	"os"
 	"time"
 
 	"github.com/Pklerik/gophKeep/internal/auth"
@@ -27,11 +28,11 @@ type Config struct {
 // LoadConfig loads server configuration from environment variables and flags.
 func LoadConfig() Config {
 	cfg := Config{
-		// ServerAddress: "localhost:8080",
-		DatabasePath: "./gophkeeper.db",
-		secretKey:    "default-secret-key",
-		LogLevel:     "info",
-		Timeout:      30 * time.Second,
+		ServerAddress: "localhost:8080",
+		DatabasePath:  "./gophkeeper.db",
+		secretKey:     "default-secret-key",
+		LogLevel:      "info",
+		Timeout:       30 * time.Second,
 	}
 
 	// Load from command line flags
@@ -44,7 +45,7 @@ func LoadConfig() Config {
 	flag.BoolVar(&cfg.TLS, "s", cfg.TLS, "Enable TLS")
 	flag.StringVar(&cfg.CertFile, "c", "", "Certificate file (for TLS)")
 	flag.StringVar(&cfg.KeyFile, "p", "", "Key file (for TLS)")
-	flag.Parse()
+	flag.CommandLine.Parse(os.Args[2:])
 
 	// Load from environment variables
 	err := env.Parse(&cfg)

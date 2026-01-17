@@ -23,6 +23,15 @@
             "console": "integratedTerminal",
             "internalConsoleOptions": "openOnSessionStart",
             "asRoot": true,
+            "args": [
+                "server",
+                "--a",
+                ":8080",
+                "-l",
+                "DEBUG",
+                "-t",
+                "10s",
+            ],
             "env": {
                 "DATABASE_URL": "postgres://gophkeeper:gophkeeper_password@postgres:5432/gophkeeper?sslmode=disable",
                 "GOOSE_DRIVER": "postgres",
@@ -30,15 +39,6 @@
                 "GOOSE_MIGRATION_DIR": "/Users/pavelbudkov/dev/urlshortener/migrations",
                 "SECRET_KEY": "secret_key",
             },
-            "args": [
-                "server",
-                "--a",
-                ":8080",
-                "--log_level",
-                "DEBUG",
-                "-t",
-                "10s",
-            ],
         },
     ]
 }
