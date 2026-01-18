@@ -1,30 +1,24 @@
 package httpclient
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"time"
 
 	"github.com/Pklerik/gophKeep/internal/models"
+
+	"github.com/go-resty/resty/v2"
 )
 
 // HTTPClient provides HTTP methods for server communication.
 type HTTPClient struct {
-	baseURL    string
-	httpClient *http.Client
-	token      string
+	httpClient *resty.Client
 }
 
 // NewHTTPClient creates a new HTTP client.
 func NewHTTPClient(baseURL string, timeout time.Duration) *HTTPClient {
 	return &HTTPClient{
-		baseURL: baseURL,
-		httpClient: &http.Client{
-			Timeout: timeout,
-		},
+		httpClient: resty.New().SetTimeout(timeout).SetBaseURL(baseURL),
 	}
 }
 
@@ -45,7 +39,7 @@ func (c *HTTPClient) Register(username, password string) (*models.AuthResponse, 
 		return nil, fmt.Errorf("failed to parse registration response: %w", err)
 	}
 
-	c.token = authResp.Token
+	c.httpClient.SetAuthToken(authResp.Token)
 	return &authResp, nil
 }
 
@@ -66,7 +60,7 @@ func (c *HTTPClient) Login(username, password string) (*models.AuthResponse, err
 		return nil, fmt.Errorf("failed to parse login response: %w", err)
 	}
 
-	c.token = authResp.Token
+	c.httpClient.SetAuthToken(authResp.Token)
 	return &authResp, nil
 }
 
@@ -94,7 +88,7 @@ func (c *HTTPClient) CreateSecret(secretType models.SecretType, title, data, met
 
 // GetSecret retrieves a secret by ID.
 func (c *HTTPClient) GetSecret(id string) (*models.Secret, error) {
-	resp, err := c.getWithAuth(fmt.Sprintf("/api/v1/secrets/get?id=%s", id))
+	resp, err := c.get(fmt.Sprintf("/api/v1/secrets/get?id=%s", id))
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +103,7 @@ func (c *HTTPClient) GetSecret(id string) (*models.Secret, error) {
 
 // ListSecrets lists all secrets for the authenticated user.
 func (c *HTTPClient) ListSecrets() ([]models.Secret, error) {
-	resp, err := c.getWithAuth("/api/v1/secrets")
+	resp, err := c.get("/api/v1/secrets")
 	if err != nil {
 		return nil, err
 	}
@@ -150,11 +144,6 @@ func (c *HTTPClient) DeleteSecret(id string) error {
 	return err
 }
 
-// SetToken sets the authentication token.
-func (c *HTTPClient) SetToken(token string) {
-	c.token = token
-}
-
 // post sends a POST request.
 func (c *HTTPClient) post(endpoint string, data interface{}) ([]byte, error) {
 	body, err := json.Marshal(data)
@@ -162,25 +151,14 @@ func (c *HTTPClient) post(endpoint string, data interface{}) ([]byte, error) {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", c.baseURL+endpoint, bytes.NewBuffer(body))
+	resp, err := c.httpClient.R().SetBody(body).Post(endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	respBody := resp.Body()
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode() >= 400 {
 		var errResp models.ErrorResponse
 		json.Unmarshal(respBody, &errResp)
 		return nil, fmt.Errorf("server error: %s - %s", errResp.Code, errResp.Message)
@@ -189,27 +167,16 @@ func (c *HTTPClient) post(endpoint string, data interface{}) ([]byte, error) {
 	return respBody, nil
 }
 
-// getWithAuth sends a GET request with authentication.
-func (c *HTTPClient) getWithAuth(endpoint string) ([]byte, error) {
-	req, err := http.NewRequest("GET", c.baseURL+endpoint, nil)
+// post sends a GET request.
+func (c *HTTPClient) get(endpoint string) ([]byte, error) {
+	resp, err := c.httpClient.R().Get(endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+c.token)
+	respBody := resp.Body()
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode() >= 400 {
 		var errResp models.ErrorResponse
 		json.Unmarshal(respBody, &errResp)
 		return nil, fmt.Errorf("server error: %s - %s", errResp.Code, errResp.Message)
@@ -225,26 +192,14 @@ func (c *HTTPClient) putWithAuth(endpoint string, data interface{}) ([]byte, err
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	req, err := http.NewRequest("PUT", c.baseURL+endpoint, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.token)
-
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.httpClient.R().SetHeader("Content-Type", "application/json").SetBody(body).Put(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
+	respBody := resp.Body()
 
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode() >= 400 {
 		var errResp models.ErrorResponse
 		json.Unmarshal(respBody, &errResp)
 		return nil, fmt.Errorf("server error: %s - %s", errResp.Code, errResp.Message)
@@ -255,25 +210,17 @@ func (c *HTTPClient) putWithAuth(endpoint string, data interface{}) ([]byte, err
 
 // deleteWithAuth sends a DELETE request with authentication.
 func (c *HTTPClient) deleteWithAuth(endpoint string) ([]byte, error) {
-	req, err := http.NewRequest("DELETE", c.baseURL+endpoint, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.httpClient.R().Delete(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody := resp.Body()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode() >= 400 {
 		var errResp models.ErrorResponse
 		json.Unmarshal(respBody, &errResp)
 		return nil, fmt.Errorf("server error: %s - %s", errResp.Code, errResp.Message)

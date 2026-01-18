@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	config "github.com/Pklerik/gophKeep/internal/config/db"
 	"github.com/Pklerik/gophKeep/internal/logger"
@@ -14,6 +16,21 @@ import (
 
 // ErrEmptyDB db is nil.
 var ErrEmptyDB = errors.New("db is nil: %w")
+
+func MigrationDir() string {
+	dir := os.Getenv("GOOSE_MIGRATION_DIR")
+	if dir != "" {
+		return dir
+	}
+
+	ex, err := os.Executable()
+	if err != nil {
+		logger.Sugar.Errorf("Can't get executable path: %w", err)
+		return ""
+	}
+
+	return filepath.Dir(ex)
+}
 
 // MakeMigrations makes migrations in current dir.
 func MakeMigrations(ctx context.Context, db *sql.DB, dbConf config.Config) error {

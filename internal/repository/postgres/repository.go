@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Pklerik/gophKeep/internal/models"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 // UserRepository handles user-related database operations.
@@ -22,7 +23,7 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 
 // CreateUser creates a new user in the database.
 func (r *UserRepository) CreateUser(id, username, passwordHash string) error {
-	query := `INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)`
+	query := `INSERT INTO users (id, username, password_hash) VALUES ($1, $2, $3) ON CONFLICT (id) DO NOTHING RETURNING id, username, password_hash, created_at, updated_at;`
 	_, err := r.db.Exec(query, id, username, passwordHash)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
@@ -32,7 +33,7 @@ func (r *UserRepository) CreateUser(id, username, passwordHash string) error {
 
 // GetUserByUsername retrieves a user by username.
 func (r *UserRepository) GetUserByUsername(username string) (*models.User, error) {
-	query := `SELECT id, username, password_hash, created_at, updated_at FROM users WHERE username = ?`
+	query := `SELECT id, username, password_hash, created_at, updated_at FROM users WHERE username = $1;`
 	row := r.db.QueryRow(query, username)
 
 	var user models.User
@@ -49,7 +50,7 @@ func (r *UserRepository) GetUserByUsername(username string) (*models.User, error
 
 // GetUserByID retrieves a user by ID.
 func (r *UserRepository) GetUserByID(id string) (*models.User, error) {
-	query := `SELECT id, username, password_hash, created_at, updated_at FROM users WHERE id = ?`
+	query := `SELECT id, username, password_hash, created_at, updated_at FROM users WHERE id = $1;`
 	row := r.db.QueryRow(query, id)
 
 	var user models.User
@@ -77,7 +78,7 @@ func NewSecretRepository(db *sql.DB) *SecretRepository {
 // CreateSecret creates a new secret in the database.
 func (r *SecretRepository) CreateSecret(secret *models.Secret) error {
 	query := `INSERT INTO secrets (id, user_id, type, title, data, metadata, version) 
-	          VALUES (?, ?, ?, ?, ?, ?, ?)`
+	          VALUES ($1, $2, $3, $4, $5, $6, $7);`
 	_, err := r.db.Exec(query, secret.ID, secret.UserID, secret.Type, secret.Title,
 		secret.Data, secret.Metadata, secret.Version)
 	if err != nil {
@@ -89,7 +90,7 @@ func (r *SecretRepository) CreateSecret(secret *models.Secret) error {
 // GetSecretByID retrieves a secret by ID.
 func (r *SecretRepository) GetSecretByID(id string) (*models.Secret, error) {
 	query := `SELECT id, user_id, type, title, data, metadata, version, created_at, updated_at 
-	          FROM secrets WHERE id = ?`
+	          FROM secrets WHERE id = $1;`
 	row := r.db.QueryRow(query, id)
 
 	var secret models.Secret
@@ -108,7 +109,7 @@ func (r *SecretRepository) GetSecretByID(id string) (*models.Secret, error) {
 // GetUserSecrets retrieves all secrets for a user.
 func (r *SecretRepository) GetUserSecrets(userID string) ([]models.Secret, error) {
 	query := `SELECT id, user_id, type, title, data, metadata, version, created_at, updated_at 
-	          FROM secrets WHERE user_id = ? ORDER BY updated_at DESC`
+	          FROM secrets WHERE user_id = $1 ORDER BY updated_at DESC;`
 	rows, err := r.db.Query(query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user secrets: %w", err)
@@ -134,8 +135,8 @@ func (r *SecretRepository) UpdateSecret(secret *models.Secret) error {
 	secret.UpdatedAt = time.Now()
 	secret.Version++
 
-	query := `UPDATE secrets SET type = ?, title = ?, data = ?, metadata = ?, version = ?, updated_at = ? 
-	          WHERE id = ? AND user_id = ?`
+	query := `UPDATE secrets SET type = $1, title = $2, data = $3, metadata = $4, version = $5, updated_at = $6 
+	          WHERE id = $7 AND user_id = $8;`
 	result, err := r.db.Exec(query, secret.Type, secret.Title, secret.Data, secret.Metadata,
 		secret.Version, secret.UpdatedAt, secret.ID, secret.UserID)
 	if err != nil {
@@ -156,7 +157,7 @@ func (r *SecretRepository) UpdateSecret(secret *models.Secret) error {
 
 // DeleteSecret deletes a secret.
 func (r *SecretRepository) DeleteSecret(id, userID string) error {
-	query := `DELETE FROM secrets WHERE id = ? AND user_id = ?`
+	query := `DELETE FROM secrets WHERE id = $1 AND user_id = $2;`
 	result, err := r.db.Exec(query, id, userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete secret: %w", err)
@@ -177,7 +178,7 @@ func (r *SecretRepository) DeleteSecret(id, userID string) error {
 // GetSecretsSince retrieves secrets updated after a certain time.
 func (r *SecretRepository) GetSecretsSince(userID string, since time.Time) ([]models.Secret, error) {
 	query := `SELECT id, user_id, type, title, data, metadata, version, created_at, updated_at 
-	          FROM secrets WHERE user_id = ? AND updated_at > ? ORDER BY updated_at DESC`
+	          FROM secrets WHERE user_id = $1 AND updated_at > $2 ORDER BY updated_at DESC;`
 	rows, err := r.db.Query(query, userID, since)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get secrets since: %w", err)

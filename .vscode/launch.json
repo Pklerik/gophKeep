@@ -33,12 +33,29 @@
                 "10s",
             ],
             "env": {
-                "DATABASE_URL": "postgres://gophkeeper:gophkeeper_password@postgres:5432/gophkeeper?sslmode=disable",
+                "DATABASE_URL": "postgres://gophkeeper:gophkeeper_password@localhost:5432/gophkeeper?sslmode=disable",
                 "GOOSE_DRIVER": "postgres",
-                "GOOSE_DBSTRING": "postgres://gophkeeper:gophkeeper_password@postgres:5432/gophkeeper?sslmode=disable",
-                "GOOSE_MIGRATION_DIR": "/Users/pavelbudkov/dev/urlshortener/migrations",
+                "GOOSE_DBSTRING": "postgres://gophkeeper:gophkeeper_password@localhost:5432/gophkeeper?sslmode=disable",
+                "GOOSE_MIGRATION_DIR": "/Users/pavelbudkov/dev/gophKeep/migrations",
                 "SECRET_KEY": "secret_key",
             },
+        },
+        {
+            "name": "client",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "/Users/pavelbudkov/dev/gophKeep/cmd/gophkeep",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "openOnSessionStart",
+            "asRoot": true,
+            "args": [
+                "client",
+                "--u",
+                ":8080",
+                "-l",
+                "DEBUG",
+            ],
         },
     ]
 }

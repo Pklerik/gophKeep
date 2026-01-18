@@ -33,6 +33,9 @@ func LoadConfig() Config {
 		secretKey:     "default-secret-key",
 		LogLevel:      "info",
 		Timeout:       30 * time.Second,
+		DatabaseURL: dbconf.Config{
+			Dialect: "sqlite3",
+		},
 	}
 
 	// Load from command line flags

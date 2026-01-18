@@ -2,13 +2,16 @@
 package postgresrepository_test
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/Pklerik/gophKeep/internal/dbinit"
+	dbconfig "github.com/Pklerik/gophKeep/internal/config/db"
+	config "github.com/Pklerik/gophKeep/internal/config/server"
+	"github.com/Pklerik/gophKeep/internal/migrations"
 	"github.com/Pklerik/gophKeep/internal/models"
+	"github.com/Pklerik/gophKeep/internal/repository"
 	postgresrepository "github.com/Pklerik/gophKeep/internal/repository/postgres"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -24,17 +27,31 @@ type RepositoryTestSuite struct {
 
 // SetupSuite sets up the test suite.
 func (suite *RepositoryTestSuite) SetupSuite() {
-	tmpFile := fmt.Sprintf("%d.db", time.Now().UnixNano())
-	db, err := dbinit.InitDB(tmpFile)
+
+	cfg := config.Config{
+		DatabaseURL: dbconfig.Config{
+			Dialect:  "postgres",
+			Host:     "localhost",
+			Port:     "5432",
+			User:     "gophkeeper_test",
+			Password: "secure_password",
+			Database: "gophkeeper_test",
+			Options:  map[string]string{"sslmode": "disable", "search_path": "gophkeeper"},
+		},
+	}
+	db, err := repository.ConnectDB(cfg)
 	suite.NoError(err)
+
+	db.Exec("DROP SCHEMA IF EXISTS \"%s\" CASCADE;", cfg.DatabaseURL.GetOptions()["search_path"])
+
+	migrations.MakeMigrations(context.Background(), db, cfg.DatabaseURL)
 
 	suite.userRepo = postgresrepository.NewUserRepository(db)
 	suite.secretRepo = postgresrepository.NewSecretRepository(db)
 
 	suite.T().Cleanup(func() {
-		db.Query("DROP database")
+		db.Exec("DROP SCHEMA IF EXISTS \"%s\" CASCADE;", cfg.DatabaseURL.GetOptions()["search_path"])
 		db.Close()
-		os.Remove(tmpFile)
 	})
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/Pklerik/gophKeep/internal/auth"
 	"github.com/Pklerik/gophKeep/internal/models"
 	"github.com/Pklerik/gophKeep/internal/service"
+	"github.com/go-chi/chi/v5"
 )
 
 // Handler contains all the handlers and their dependencies.
@@ -55,6 +56,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		Token:     token,
 		ExpiresAt: expiresAt,
 	}
+	w.Header().Set("Authorization", "Bearer "+token)
 
 	writeJSONResponse(w, http.StatusCreated, resp)
 }
@@ -89,6 +91,8 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		Token:     token,
 		ExpiresAt: expiresAt,
 	}
+
+	w.Header().Set("Authorization", "Bearer "+token)
 
 	writeJSONResponse(w, http.StatusOK, resp)
 }
@@ -147,7 +151,7 @@ func (h *Handler) GetSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	secretID := r.URL.Query().Get("id")
+	secretID := chi.URLParam(r, "id")
 	if secretID == "" {
 		writeErrorResponse(w, http.StatusBadRequest, "INVALID_REQUEST", "Secret ID is required")
 		return
@@ -197,7 +201,7 @@ func (h *Handler) UpdateSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	secretID := r.URL.Query().Get("id")
+	secretID := chi.URLParam(r, "id")
 	if secretID == "" {
 		writeErrorResponse(w, http.StatusBadRequest, "INVALID_REQUEST", "Secret ID is required")
 		return
@@ -244,7 +248,7 @@ func (h *Handler) DeleteSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	secretID := r.URL.Query().Get("id")
+	secretID := chi.URLParam(r, "id")
 	if secretID == "" {
 		writeErrorResponse(w, http.StatusBadRequest, "INVALID_REQUEST", "Secret ID is required")
 		return

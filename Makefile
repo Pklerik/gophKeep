@@ -1,3 +1,7 @@
+#!make
+include .env
+export $(shell sed 's/=.*//' .env)
+
 .PHONY: build server client test coverage bench clean help install docker-up docker-down docker-logs
 
 # Build variables
@@ -6,6 +10,9 @@ BINARY_CLIENT = gophkeeper-client
 BUILD_DIR = bin
 VERSION = v1.0.0
 BUILD_TIME = $(shell date -u '+%Y-%m-%d_%H:%M:%S')
+
+DB_USER = $(POSTGRES_USER)
+DB_PASSWORD = $(POSTGRES_PASSWORD)
 
 help:
 	@echo "GophKeeper - Password Manager Application"
@@ -118,7 +125,7 @@ docker-up:
 	@echo "  PostgreSQL: localhost:5432"
 	@echo "  Server: http://localhost:8080"
 	@echo ""
-	@echo "Connect with: psql -h localhost -U gophkeeper -d gophkeeper"
+	@echo "Connect with: psql -h localhost -U $(DB_USER) -d gophkeeper"
 
 docker-down:
 	@echo "Stopping services..."

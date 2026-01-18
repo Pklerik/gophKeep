@@ -5,15 +5,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	config "github.com/Pklerik/gophKeep/internal/config/server"
-	"github.com/Pklerik/gophKeep/internal/dbinit"
 	handler "github.com/Pklerik/gophKeep/internal/handler/server"
 	"github.com/Pklerik/gophKeep/internal/logger"
 	"github.com/Pklerik/gophKeep/internal/middleware"
+	"github.com/Pklerik/gophKeep/internal/migrations"
+
 	"github.com/Pklerik/gophKeep/internal/repository"
-	mysqlrepo "github.com/Pklerik/gophKeep/internal/repository/mysql"
 	postgresrepository "github.com/Pklerik/gophKeep/internal/repository/postgres"
 	"github.com/Pklerik/gophKeep/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -31,23 +30,21 @@ func NewServerRouter() *ServerRouter {
 // ConfigureRouter configures the HTTP router with all routes.
 func (sr *ServerRouter) ConfigureRouter(ctx context.Context, cfg config.Config) (http.Handler, error) {
 	// Initialize database
-	db, err := dbinit.InitDB(cfg.DatabasePath)
+	db, err := repository.ConnectDB(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize database: %w", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	err = migrations.MakeMigrations(ctx, db, cfg.DatabaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make migrations: %w", err)
 	}
 
 	// Create repositories
 	var (
-		userRepo   repository.UserRepositoryInterface
-		secretRepo repository.SecretRepositoryInterface
+		userRepo   repository.UserRepositoryInterface   = postgresrepository.NewUserRepository(db)
+		secretRepo repository.SecretRepositoryInterface = postgresrepository.NewSecretRepository(db)
 	)
-	if strings.Contains(cfg.DatabaseURL.Dialect, "postgres") {
-		userRepo = postgresrepository.NewUserRepository(db)
-		secretRepo = postgresrepository.NewSecretRepository(db)
-	} else {
-		userRepo = mysqlrepo.NewUserRepository(db)
-		secretRepo = mysqlrepo.NewSecretRepository(db)
-	}
 
 	// Create services
 	userService := service.NewUserService(userRepo)
@@ -77,14 +74,13 @@ func (sr *ServerRouter) ConfigureRouter(ctx context.Context, cfg config.Config) 
 				r.Group(func(r chi.Router) {
 					r.Use(
 						middleware.AuthMiddleware(userService),
-						middleware.AuthMiddleware(userService),
 					)
 					r.Route("/secrets", func(r chi.Router) {
 						r.Get("/", h.ListSecrets)
 						r.Post("/", h.CreateSecret)
-						r.Get("/get", h.GetSecret)
-						r.Put("/update", h.UpdateSecret)
-						r.Delete("/delete", h.DeleteSecret)
+						r.Get("/{id}", h.GetSecret)
+						r.Put("/{id}", h.UpdateSecret)
+						r.Delete("/{id}", h.DeleteSecret)
 					})
 				})
 			})

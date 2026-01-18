@@ -48,6 +48,7 @@ type Config struct {
 	Database  string
 	Options   Options
 	RawString string
+	isValid   bool
 }
 
 // UnmarshalText provide text unmarshaling for Address string.
@@ -103,6 +104,7 @@ func (dbc *Config) Set(s string) error {
 		return ErrSetDefault
 	}
 
+	dbc.isValid = true
 	return nil
 }
 
@@ -254,4 +256,8 @@ func (dbc *Config) Valid() error {
 	}
 
 	return nil
+}
+
+func (dbc *Config) IsValid() bool {
+	return dbc.isValid
 }

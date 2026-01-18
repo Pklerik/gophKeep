@@ -2,16 +2,13 @@
 package service
 
 import (
-	"database/sql"
-	"fmt"
-	"os"
+	"errors"
 	"testing"
-	"time"
 
-	"github.com/Pklerik/gophKeep/internal/dbinit"
+	"github.com/Pklerik/gophKeep/internal/cryptography"
 	"github.com/Pklerik/gophKeep/internal/models"
-	"github.com/Pklerik/gophKeep/internal/repository"
-	mysqlrepository "github.com/Pklerik/gophKeep/internal/repository/mysql"
+	"github.com/Pklerik/gophKeep/internal/repository/mocks"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -19,55 +16,70 @@ import (
 // ServiceTestSuite represents the test suite for services.
 type ServiceTestSuite struct {
 	suite.Suite
-	db            *sql.DB
-	userService   *UserService
-	secretService *SecretService
-	userRepo      repository.UserRepositoryInterface
-	secretRepo    repository.SecretRepositoryInterface
+	userService    *UserService
+	secretService  *SecretService
+	ctrl           *gomock.Controller
+	mockUserRepo   *mocks.MockUserRepositoryInterface
+	mockSecretRepo *mocks.MockSecretRepositoryInterface
 }
 
-// SetupSuite sets up the test suite.
-func (suite *ServiceTestSuite) SetupSuite() {
-	tmpFile := fmt.Sprintf("%d.db", time.Now().UnixNano())
-	db, err := dbinit.InitDB(tmpFile)
-	suite.NoError(err)
-	suite.db = db
+// SetupTest creates a fresh gomock controller and mocks for each test.
+func (suite *ServiceTestSuite) SetupTest() {
+	suite.ctrl = gomock.NewController(suite.T())
+	suite.mockUserRepo = mocks.NewMockUserRepositoryInterface(suite.ctrl)
+	suite.mockSecretRepo = mocks.NewMockSecretRepositoryInterface(suite.ctrl)
 
-	suite.userRepo = mysqlrepository.NewUserRepository(db)
-	suite.secretRepo = mysqlrepository.NewSecretRepository(db)
+	suite.userService = NewUserService(suite.mockUserRepo)
+	suite.secretService = NewSecretService(suite.mockSecretRepo)
+}
 
-	suite.userService = NewUserService(suite.userRepo)
-	suite.secretService = NewSecretService(suite.secretRepo)
-
-	suite.T().Cleanup(func() {
-		db.Close()
-		os.Remove(tmpFile)
-	})
+// TearDownTest finishes gomock controller.
+func (suite *ServiceTestSuite) TearDownTest() {
+	suite.ctrl.Finish()
 }
 
 // TestRegisterUser tests user registration.
 func (suite *ServiceTestSuite) TestRegisterUser() {
-	user, err := suite.userService.RegisterUser("testuser", "password123")
+	username := "testuser"
+	password := "password123"
+
+	suite.mockUserRepo.EXPECT().GetUserByUsername(username).Return(nil, errors.New("not found"))
+	suite.mockUserRepo.EXPECT().CreateUser(gomock.Any(), username, gomock.Any()).Return(nil)
+
+	user, err := suite.userService.RegisterUser(username, password)
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), user)
-	assert.Equal(suite.T(), "testuser", user.Username)
+	assert.Equal(suite.T(), username, user.Username)
 }
 
 // TestAuthenticateUser tests user authentication.
 func (suite *ServiceTestSuite) TestAuthenticateUser() {
-	suite.userService.RegisterUser("authuser", "password123")
+	username := "authuser"
+	password := "password123"
+	hash := cryptography.HashPassword(password)
 
-	user, err := suite.userService.AuthenticateUser("authuser", "password123")
+	userModel := &models.User{ID: "u1", Username: username, PasswordHash: hash}
+	suite.mockUserRepo.EXPECT().GetUserByUsername(username).Return(userModel, nil)
+
+	user, err := suite.userService.AuthenticateUser(username, password)
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), user)
-	assert.Equal(suite.T(), "authuser", user.Username)
+	assert.Equal(suite.T(), username, user.Username)
 }
 
 // TestCreateSecret tests creating a secret.
 func (suite *ServiceTestSuite) TestCreateSecret() {
-	user, _ := suite.userService.RegisterUser("secretuser", "password123")
+	userID := "user1"
 
-	secret, err := suite.secretService.CreateSecret(user.ID, models.SecretTypeCredentials,
+	suite.mockSecretRepo.EXPECT().CreateSecret(gomock.AssignableToTypeOf(&models.Secret{})).DoAndReturn(
+		func(s *models.Secret) error {
+			assert.Equal(suite.T(), "My Password", s.Title)
+			assert.Equal(suite.T(), userID, s.UserID)
+			return nil
+		},
+	)
+
+	secret, err := suite.secretService.CreateSecret(userID, models.SecretTypeCredentials,
 		"My Password", "login:password", "website.com")
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), secret)
@@ -76,25 +88,28 @@ func (suite *ServiceTestSuite) TestCreateSecret() {
 
 // TestListSecrets tests listing user secrets.
 func (suite *ServiceTestSuite) TestListSecrets() {
-	user, _ := suite.userService.RegisterUser("listuser", "password123")
+	userID := "listuser"
 
-	suite.secretService.CreateSecret(user.ID, models.SecretTypeCredentials,
-		"Secret 1", "data1", "meta1")
-	suite.secretService.CreateSecret(user.ID, models.SecretTypeText,
-		"Secret 2", "data2", "meta2")
+	expected := []models.Secret{
+		{ID: "s1", UserID: userID, Title: "Secret 1"},
+		{ID: "s2", UserID: userID, Title: "Secret 2"},
+	}
 
-	secrets, err := suite.secretService.ListSecrets(user.ID)
+	suite.mockSecretRepo.EXPECT().GetUserSecrets(userID).Return(expected, nil)
+
+	secrets, err := suite.secretService.ListSecrets(userID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), 2, len(secrets))
 }
 
 // TestGetSecret tests retrieving a specific secret.
 func (suite *ServiceTestSuite) TestGetSecret() {
-	user, _ := suite.userService.RegisterUser("getuser", "password123")
-	created, _ := suite.secretService.CreateSecret(user.ID, models.SecretTypeCredentials,
-		"My Secret", "secret_data", "metadata")
+	userID := "uget"
+	created := &models.Secret{ID: "sget", UserID: userID, Title: "My Secret"}
 
-	retrieved, err := suite.secretService.GetSecret(created.ID, user.ID)
+	suite.mockSecretRepo.EXPECT().GetSecretByID(created.ID).Return(created, nil)
+
+	retrieved, err := suite.secretService.GetSecret(created.ID, userID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), created.ID, retrieved.ID)
 	assert.Equal(suite.T(), "My Secret", retrieved.Title)
@@ -102,27 +117,37 @@ func (suite *ServiceTestSuite) TestGetSecret() {
 
 // TestUpdateSecret tests updating a secret.
 func (suite *ServiceTestSuite) TestUpdateSecret() {
-	user, _ := suite.userService.RegisterUser("updateuser", "password123")
-	created, _ := suite.secretService.CreateSecret(user.ID, models.SecretTypeCredentials,
-		"Original", "data", "meta")
+	userID := "upuser"
+	created := &models.Secret{ID: "sup", UserID: userID, Title: "Original", Version: 1}
 
-	updated, err := suite.secretService.UpdateSecret(created.ID, user.ID,
+	suite.mockSecretRepo.EXPECT().GetSecretByID(created.ID).Return(created, nil)
+	suite.mockSecretRepo.EXPECT().UpdateSecret(gomock.AssignableToTypeOf(&models.Secret{})).DoAndReturn(
+		func(s *models.Secret) error {
+			assert.Equal(suite.T(), "Updated", s.Title)
+			assert.Equal(suite.T(), userID, s.UserID)
+			return nil
+		},
+	)
+
+	updated, err := suite.secretService.UpdateSecret(created.ID, userID,
 		models.SecretTypeText, "Updated", "new_data", "new_meta")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Updated", updated.Title)
-	assert.Equal(suite.T(), 2, updated.Version)
+	assert.Equal(suite.T(), 1, updated.Version)
 }
 
 // TestDeleteSecret tests deleting a secret.
 func (suite *ServiceTestSuite) TestDeleteSecret() {
-	user, _ := suite.userService.RegisterUser("deleteuser", "password123")
-	created, _ := suite.secretService.CreateSecret(user.ID, models.SecretTypeCredentials,
-		"To Delete", "data", "meta")
+	userID := "deluser"
+	created := &models.Secret{ID: "sdel", UserID: userID, Title: "To Delete"}
 
-	err := suite.secretService.DeleteSecret(created.ID, user.ID)
+	suite.mockSecretRepo.EXPECT().DeleteSecret(created.ID, userID).Return(nil)
+	suite.mockSecretRepo.EXPECT().GetSecretByID(created.ID).Return(nil, errors.New("not found"))
+
+	err := suite.secretService.DeleteSecret(created.ID, userID)
 	assert.NoError(suite.T(), err)
 
-	_, err = suite.secretService.GetSecret(created.ID, user.ID)
+	_, err = suite.secretService.GetSecret(created.ID, userID)
 	assert.Error(suite.T(), err)
 }
 

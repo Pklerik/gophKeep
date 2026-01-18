@@ -13,5 +13,4 @@ type IClient interface {
 	ListSecrets() ([]models.Secret, error)
 	UpdateSecret(id string, secretType models.SecretType, title, data, metadata string) (*models.Secret, error)
 	DeleteSecret(id string) error
-	SetToken(token string)
 }
