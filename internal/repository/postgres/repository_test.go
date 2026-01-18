@@ -58,20 +58,22 @@ func (suite *RepositoryTestSuite) SetupSuite() {
 // TestCreateUser tests creating a user.
 func (suite *RepositoryTestSuite) TestCreateUser() {
 	id := uuid.New().String()
-	err := suite.userRepo.CreateUser(id, "testuser", "hashedpassword")
+	username := fmt.Sprintf("testuser_%s", id[:8])
+	err := suite.userRepo.CreateUser(id, username, "hashedpassword")
 	assert.NoError(suite.T(), err)
 
 	user, err := suite.userRepo.GetUserByID(id)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "testuser", user.Username)
+	assert.Equal(suite.T(), username, user.Username)
 }
 
 // TestGetUserByUsername tests retrieving a user by username.
 func (suite *RepositoryTestSuite) TestGetUserByUsername() {
 	id := uuid.New().String()
-	suite.userRepo.CreateUser(id, "findme", "hashedpassword")
+	username := fmt.Sprintf("findme_%s", uuid.New().String()[:8])
+	suite.userRepo.CreateUser(id, username, "hashedpassword")
 
-	user, err := suite.userRepo.GetUserByUsername("findme")
+	user, err := suite.userRepo.GetUserByUsername(username)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), id, user.ID)
 }
@@ -85,7 +87,8 @@ func (suite *RepositoryTestSuite) TestGetUserByUsernameNotFound() {
 // TestCreateSecret tests creating a secret.
 func (suite *RepositoryTestSuite) TestCreateSecret() {
 	userID := uuid.New().String()
-	suite.userRepo.CreateUser(userID, "user", "hash")
+	username := fmt.Sprintf("user_create_%s", uuid.New().String()[:8])
+	suite.userRepo.CreateUser(userID, username, "hash")
 
 	secret := &models.Secret{
 		ID:        uuid.New().String(),
@@ -110,7 +113,8 @@ func (suite *RepositoryTestSuite) TestCreateSecret() {
 // TestGetUserSecrets tests retrieving all user secrets.
 func (suite *RepositoryTestSuite) TestGetUserSecrets() {
 	userID := uuid.New().String()
-	suite.userRepo.CreateUser(userID, "user2", "hash")
+	username := fmt.Sprintf("user_secrets_%s", uuid.New().String()[:8])
+	suite.userRepo.CreateUser(userID, username, "hash")
 
 	for i := 0; i < 3; i++ {
 		secret := &models.Secret{
@@ -135,7 +139,8 @@ func (suite *RepositoryTestSuite) TestGetUserSecrets() {
 // TestUpdateSecret tests updating a secret.
 func (suite *RepositoryTestSuite) TestUpdateSecret() {
 	userID := uuid.New().String()
-	suite.userRepo.CreateUser(userID, "user3", "hash")
+	username := fmt.Sprintf("user_update_%s", uuid.New().String()[:8])
+	suite.userRepo.CreateUser(userID, username, "hash")
 
 	secret := &models.Secret{
 		ID:        uuid.New().String(),
@@ -154,6 +159,7 @@ func (suite *RepositoryTestSuite) TestUpdateSecret() {
 	secret.Data = []byte("updated_data")
 
 	err := suite.secretRepo.UpdateSecret(secret)
+
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), 2, secret.Version)
 
@@ -165,7 +171,8 @@ func (suite *RepositoryTestSuite) TestUpdateSecret() {
 // TestDeleteSecret tests deleting a secret.
 func (suite *RepositoryTestSuite) TestDeleteSecret() {
 	userID := uuid.New().String()
-	suite.userRepo.CreateUser(userID, "user4", "hash")
+	username := fmt.Sprintf("user_delete_%s", uuid.New().String()[:8])
+	suite.userRepo.CreateUser(userID, username, "hash")
 
 	secret := &models.Secret{
 		ID:        uuid.New().String(),
@@ -191,8 +198,10 @@ func (suite *RepositoryTestSuite) TestDeleteSecret() {
 func (suite *RepositoryTestSuite) TestDeleteSecretWrongUser() {
 	userID1 := uuid.New().String()
 	userID2 := uuid.New().String()
-	suite.userRepo.CreateUser(userID1, "user5", "hash")
-	suite.userRepo.CreateUser(userID2, "user6", "hash")
+	username1 := fmt.Sprintf("user_del_wrong1_%s", uuid.New().String()[:8])
+	username2 := fmt.Sprintf("user_del_wrong2_%s", uuid.New().String()[:8])
+	suite.userRepo.CreateUser(userID1, username1, "hash")
+	suite.userRepo.CreateUser(userID2, username2, "hash")
 
 	secret := &models.Secret{
 		ID:        uuid.New().String(),

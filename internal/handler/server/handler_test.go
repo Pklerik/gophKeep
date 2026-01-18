@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"github.com/Pklerik/gophKeep/internal/models"
 	repoMocks "github.com/Pklerik/gophKeep/internal/repository/mocks"
 	"github.com/Pklerik/gophKeep/internal/service"
+	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -136,10 +138,13 @@ func TestCreateGetListUpdateDeleteSecret_Flow(t *testing.T) {
 	h.CreateSecret(rr, req)
 	assert.Equal(t, http.StatusCreated, rr.Code)
 
-	// GetSecret
-	req = httptest.NewRequest(http.MethodGet, "/secret?id=sid1", nil)
+	// GetSecret - use chi context for path parameter
+	req = httptest.NewRequest(http.MethodGet, "/secret/sid1", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr = httptest.NewRecorder()
+	ctx := chi.NewRouteContext()
+	ctx.URLParams.Add("id", "sid1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
 	h.GetSecret(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 
@@ -153,16 +158,22 @@ func TestCreateGetListUpdateDeleteSecret_Flow(t *testing.T) {
 	// UpdateSecret
 	updateReq := map[string]interface{}{"type": models.SecretTypeText, "title": "t2", "data": "d2", "metadata": "m2"}
 	ub, _ := json.Marshal(updateReq)
-	req = httptest.NewRequest(http.MethodPut, "/secret?id=sid1", bytes.NewReader(ub))
+	req = httptest.NewRequest(http.MethodPut, "/secret/sid1", bytes.NewReader(ub))
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr = httptest.NewRecorder()
+	ctx = chi.NewRouteContext()
+	ctx.URLParams.Add("id", "sid1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
 	h.UpdateSecret(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 
 	// DeleteSecret
-	req = httptest.NewRequest(http.MethodDelete, "/secret?id=sid1", nil)
+	req = httptest.NewRequest(http.MethodDelete, "/secret/sid1", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr = httptest.NewRecorder()
+	ctx = chi.NewRouteContext()
+	ctx.URLParams.Add("id", "sid1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
 	h.DeleteSecret(rr, req)
 	assert.Equal(t, http.StatusNoContent, rr.Code)
 }
@@ -346,9 +357,12 @@ func TestGetSecret_NotFound(t *testing.T) {
 	sh := service.NewSecretService(sr)
 	h := NewHandler(uh, sh)
 
-	req := httptest.NewRequest(http.MethodGet, "/secret?id=nosuch", nil)
+	req := httptest.NewRequest(http.MethodGet, "/secret/nosuch", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
+	ctx := chi.NewRouteContext()
+	ctx.URLParams.Add("id", "nosuch")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
 	h.GetSecret(rr, req)
 	assert.Equal(t, http.StatusNotFound, rr.Code)
 }
@@ -390,9 +404,12 @@ func TestUpdateSecret_UpdateFail(t *testing.T) {
 
 	updateReq := map[string]interface{}{"type": models.SecretTypeText, "title": "t2", "data": "d2", "metadata": "m2"}
 	ub, _ := json.Marshal(updateReq)
-	req := httptest.NewRequest(http.MethodPut, "/secret?id=sid1", bytes.NewReader(ub))
+	req := httptest.NewRequest(http.MethodPut, "/secret/sid1", bytes.NewReader(ub))
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
+	ctx := chi.NewRouteContext()
+	ctx.URLParams.Add("id", "sid1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
 	h.UpdateSecret(rr, req)
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }
@@ -410,9 +427,12 @@ func TestDeleteSecret_Fail(t *testing.T) {
 	sh := service.NewSecretService(sr)
 	h := NewHandler(uh, sh)
 
-	req := httptest.NewRequest(http.MethodDelete, "/secret?id=sid1", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/secret/sid1", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
+	ctx := chi.NewRouteContext()
+	ctx.URLParams.Add("id", "sid1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
 	h.DeleteSecret(rr, req)
 	assert.Equal(t, http.StatusNotFound, rr.Code)
 }
