@@ -33,12 +33,18 @@ build: server client
 server:
 	@echo "Building server..."
 	@mkdir -p $(BUILD_DIR)
-	go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_SERVER) ./cmd/gophkeep
+	env GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_SERVER) ./cmd/gophkeep
+	env GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_SERVER)-windows-amd64.exe ./cmd/gophkeep
+	env GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_SERVER)_darwin-arm64 ./cmd/gophkeep
+	env GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_SERVER)_darwin-amd64 ./cmd/gophkeep
 
 client:
 	@echo "Building client..."
 	@mkdir -p $(BUILD_DIR)
-	go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_CLIENT) ./cmd/gophkeep
+	env GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_CLIENT) ./cmd/gophkeep
+	env GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_CLIENT)-windows-amd64.exe ./cmd/gophkeep
+	env GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_CLIENT)_darwin-arm64 ./cmd/gophkeep
+	env GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_CLIENT)_darwin-amd64 ./cmd/gophkeep
 
 test:
 	@echo "Running tests..."
