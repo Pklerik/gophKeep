@@ -36,28 +36,10 @@ var (
 
 	// Sugar is a *zap.SugaredLogger providing a convenient formatted logging interface.
 	Sugar *zap.SugaredLogger = Log.Sugar()
-
-	// config stores the logger configuration.
-	config zap.Config
 )
 
 // Initialize initializes the singleton logger with the specified logging level.
-func Initialize(level string) error {
-	// parse textual log level to zap.AtomicLevel
-	lvl, err := zap.ParseAtomicLevel(level)
-	if err != nil {
-		return fmt.Errorf("Initialize: %w", err)
-	}
-
-	config = zap.Config{
-		Level:            lvl,
-		Development:      false,
-		Encoding:         "json",
-		EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
-		OutputPaths:      []string{"stdout"},
-		ErrorOutputPaths: []string{"stderr"},
-	}
-
+func Initialize(config zap.Config) error {
 	// build logger from configuration
 	zl, err := config.Build()
 	if err != nil {

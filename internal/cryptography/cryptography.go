@@ -75,15 +75,14 @@ func DecryptAES(ciphertextB64, password string) (string, error) {
 }
 
 // HashPassword creates a password hash using PBKDF2.
-func HashPassword(password string) string {
-	salt := []byte("gophkeeper-salt") // In production, use random salt
+func HashPassword(password string, salt []byte) string {
 	hash := pbkdf2.Key([]byte(password), salt, 4096, 32, sha256.New)
 	return base64.StdEncoding.EncodeToString(hash)
 }
 
 // VerifyPassword checks if the provided password matches the hash.
-func VerifyPassword(password, hash string) bool {
-	return HashPassword(password) == hash
+func VerifyPassword(password, hash string, salt []byte) bool {
+	return HashPassword(password, salt) == hash
 }
 
 // deriveKey derives a 32-byte encryption key from a password using PBKDF2.

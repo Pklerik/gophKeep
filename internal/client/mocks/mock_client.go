@@ -123,18 +123,6 @@ func (mr *MockIClientMockRecorder) Register(username, password interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockIClient)(nil).Register), username, password)
 }
 
-// SetToken mocks base method.
-func (m *MockIClient) SetToken(token string) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetToken", token)
-}
-
-// SetToken indicates an expected call of SetToken.
-func (mr *MockIClientMockRecorder) SetToken(token interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetToken", reflect.TypeOf((*MockIClient)(nil).SetToken), token)
-}
-
 // UpdateSecret mocks base method.
 func (m *MockIClient) UpdateSecret(id string, secretType models.SecretType, title, data, metadata string) (*models.Secret, error) {
 	m.ctrl.T.Helper()

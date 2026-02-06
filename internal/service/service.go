@@ -14,12 +14,13 @@ import (
 
 // UserService handles user-related business logic.
 type UserService struct {
-	repo repository.UserRepositoryInterface
+	repo         repository.UserRepositoryInterface
+	passwordSalt []byte
 }
 
 // NewUserService creates a new user service.
-func NewUserService(repo repository.UserRepositoryInterface) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(repo repository.UserRepositoryInterface, passwordSalt []byte) *UserService {
+	return &UserService{repo: repo, passwordSalt: passwordSalt}
 }
 
 // RegisterUser registers a new user.
@@ -39,7 +40,7 @@ func (s *UserService) RegisterUser(username, password string) (*models.User, err
 	}
 
 	id := uuid.New().String()
-	hash := cryptography.HashPassword(password)
+	hash := cryptography.HashPassword(password, s.passwordSalt)
 
 	err = s.repo.CreateUser(id, username, hash)
 	if err != nil {
@@ -65,7 +66,7 @@ func (s *UserService) AuthenticateUser(username, password string) (*models.User,
 		return nil, fmt.Errorf("authentication failed: %w", err)
 	}
 
-	if !cryptography.VerifyPassword(password, user.PasswordHash) {
+	if !cryptography.VerifyPassword(password, user.PasswordHash, s.passwordSalt) {
 		return nil, errors.New("invalid password")
 	}
 

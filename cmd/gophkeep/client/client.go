@@ -11,10 +11,10 @@ import (
 
 // Run starts the client application.
 func Run() {
-	if err := logger.Initialize("info"); err != nil {
+	cfg := config.LoadConfig()
+	if err := logger.Initialize(cfg.LoggerConfig); err != nil {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 
-	cfg := config.LoadConfig()
 	client.StartApp(cfg)
 }

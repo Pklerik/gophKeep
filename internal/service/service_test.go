@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+var testSalt = []byte("test-salt")
+
 // ServiceTestSuite represents the test suite for services.
 type ServiceTestSuite struct {
 	suite.Suite
@@ -29,7 +31,7 @@ func (suite *ServiceTestSuite) SetupTest() {
 	suite.mockUserRepo = mocks.NewMockUserRepositoryInterface(suite.ctrl)
 	suite.mockSecretRepo = mocks.NewMockSecretRepositoryInterface(suite.ctrl)
 
-	suite.userService = NewUserService(suite.mockUserRepo)
+	suite.userService = NewUserService(suite.mockUserRepo, testSalt)
 	suite.secretService = NewSecretService(suite.mockSecretRepo)
 }
 
@@ -56,7 +58,7 @@ func (suite *ServiceTestSuite) TestRegisterUser() {
 func (suite *ServiceTestSuite) TestAuthenticateUser() {
 	username := "authuser"
 	password := "password123"
-	hash := cryptography.HashPassword(password)
+	hash := cryptography.HashPassword(password, testSalt)
 
 	userModel := &models.User{ID: "u1", Username: username, PasswordHash: hash}
 	suite.mockUserRepo.EXPECT().GetUserByUsername(username).Return(userModel, nil)
