@@ -3,10 +3,12 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/Pklerik/gophKeep/internal/auth"
+	"github.com/Pklerik/gophKeep/internal/handler/server/dictionary"
 	"github.com/Pklerik/gophKeep/internal/models"
 	"github.com/Pklerik/gophKeep/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -29,26 +31,26 @@ func NewHandler(userService *service.UserService, secretService *service.SecretS
 // Register handles user registration.
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeErrorResponse(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Only POST is allowed")
+		writeErrorResponse(w, http.StatusMethodNotAllowed, dictionary.MethodNotAllowed, fmt.Sprintf(dictionary.OnlyAllowed, http.MethodPost))
 		return
 	}
 
 	var req models.AuthRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		writeErrorResponse(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
+		writeErrorResponse(w, http.StatusBadRequest, dictionary.InvalidRequest, "Invalid request body")
 		return
 	}
 
 	user, err := h.userService.RegisterUser(req.Username, req.Password)
 	if err != nil {
-		writeErrorResponse(w, http.StatusBadRequest, "REGISTRATION_FAILED", err.Error())
+		writeErrorResponse(w, http.StatusBadRequest, dictionary.RegistrationFailed, err.Error())
 		return
 	}
 
 	token, expiresAt, err := auth.GenerateToken(user.ID)
 	if err != nil {
-		writeErrorResponse(w, http.StatusInternalServerError, "TOKEN_GENERATION_FAILED", "Failed to generate token")
+		writeErrorResponse(w, http.StatusInternalServerError, dictionary.TokenGenerationFailed, "Failed to generate token")
 		return
 	}
 
@@ -64,26 +66,26 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 // Login handles user login.
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeErrorResponse(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Only POST is allowed")
+		writeErrorResponse(w, http.StatusMethodNotAllowed, dictionary.MethodNotAllowed, fmt.Sprintf(dictionary.OnlyAllowed, http.MethodPost))
 		return
 	}
 
 	var req models.AuthRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		writeErrorResponse(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
+		writeErrorResponse(w, http.StatusBadRequest, dictionary.InvalidRequest, "Invalid request body")
 		return
 	}
 
 	user, err := h.userService.AuthenticateUser(req.Username, req.Password)
 	if err != nil {
-		writeErrorResponse(w, http.StatusUnauthorized, "AUTHENTICATION_FAILED", err.Error())
+		writeErrorResponse(w, http.StatusUnauthorized, dictionary.AuthenticationFailed, err.Error())
 		return
 	}
 
 	token, expiresAt, err := auth.GenerateToken(user.ID)
 	if err != nil {
-		writeErrorResponse(w, http.StatusInternalServerError, "TOKEN_GENERATION_FAILED", "Failed to generate token")
+		writeErrorResponse(w, http.StatusInternalServerError, dictionary.TokenGenerationFailed, "Failed to generate token")
 		return
 	}
 
@@ -100,19 +102,19 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 // CreateSecret handles secret creation.
 func (h *Handler) CreateSecret(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeErrorResponse(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Only POST is allowed")
+		writeErrorResponse(w, http.StatusMethodNotAllowed, dictionary.MethodNotAllowed, fmt.Sprintf(dictionary.OnlyAllowed, http.MethodPost))
 		return
 	}
 
 	userID, err := h.extractUserID(r)
 	if err != nil {
-		writeErrorResponse(w, http.StatusUnauthorized, "UNAUTHORIZED", err.Error())
+		writeErrorResponse(w, http.StatusUnauthorized, dictionary.Unauthorized, err.Error())
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		writeErrorResponse(w, http.StatusBadRequest, "INVALID_REQUEST", "Failed to read request body")
+		writeErrorResponse(w, http.StatusBadRequest, dictionary.InvalidRequest, "Failed to read request body")
 		return
 	}
 
@@ -125,7 +127,7 @@ func (h *Handler) CreateSecret(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal(body, &req)
 	if err != nil {
-		writeErrorResponse(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
+		writeErrorResponse(w, http.StatusBadRequest, dictionary.InvalidRequest, "Invalid request body")
 		return
 	}
 
@@ -141,25 +143,25 @@ func (h *Handler) CreateSecret(w http.ResponseWriter, r *http.Request) {
 // GetSecret retrieves a secret by ID.
 func (h *Handler) GetSecret(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeErrorResponse(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Only GET is allowed")
+		writeErrorResponse(w, http.StatusMethodNotAllowed, dictionary.MethodNotAllowed, fmt.Sprintf(dictionary.OnlyAllowed, http.MethodGet))
 		return
 	}
 
 	userID, err := h.extractUserID(r)
 	if err != nil {
-		writeErrorResponse(w, http.StatusUnauthorized, "UNAUTHORIZED", err.Error())
+		writeErrorResponse(w, http.StatusUnauthorized, dictionary.Unauthorized, err.Error())
 		return
 	}
 
 	secretID := chi.URLParam(r, "id")
 	if secretID == "" {
-		writeErrorResponse(w, http.StatusBadRequest, "INVALID_REQUEST", "Secret ID is required")
+		writeErrorResponse(w, http.StatusBadRequest, dictionary.InvalidRequest, "Secret ID is required")
 		return
 	}
 
 	secret, err := h.secretService.GetSecret(secretID, userID)
 	if err != nil {
-		writeErrorResponse(w, http.StatusNotFound, "NOT_FOUND", err.Error())
+		writeErrorResponse(w, http.StatusNotFound, dictionary.NotFound, err.Error())
 		return
 	}
 
@@ -169,19 +171,19 @@ func (h *Handler) GetSecret(w http.ResponseWriter, r *http.Request) {
 // ListSecrets retrieves all secrets for the authenticated user.
 func (h *Handler) ListSecrets(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeErrorResponse(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Only GET is allowed")
+		writeErrorResponse(w, http.StatusMethodNotAllowed, dictionary.MethodNotAllowed, fmt.Sprintf(dictionary.OnlyAllowed, http.MethodGet))
 		return
 	}
 
 	userID, err := h.extractUserID(r)
 	if err != nil {
-		writeErrorResponse(w, http.StatusUnauthorized, "UNAUTHORIZED", err.Error())
+		writeErrorResponse(w, http.StatusUnauthorized, dictionary.Unauthorized, err.Error())
 		return
 	}
 
 	secrets, err := h.secretService.ListSecrets(userID)
 	if err != nil {
-		writeErrorResponse(w, http.StatusInternalServerError, "LIST_FAILED", err.Error())
+		writeErrorResponse(w, http.StatusInternalServerError, dictionary.ListFailed, err.Error())
 		return
 	}
 
@@ -191,25 +193,25 @@ func (h *Handler) ListSecrets(w http.ResponseWriter, r *http.Request) {
 // UpdateSecret updates an existing secret.
 func (h *Handler) UpdateSecret(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		writeErrorResponse(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Only PUT is allowed")
+		writeErrorResponse(w, http.StatusMethodNotAllowed, dictionary.MethodNotAllowed, fmt.Sprintf(dictionary.OnlyAllowed, http.MethodPut))
 		return
 	}
 
 	userID, err := h.extractUserID(r)
 	if err != nil {
-		writeErrorResponse(w, http.StatusUnauthorized, "UNAUTHORIZED", err.Error())
+		writeErrorResponse(w, http.StatusUnauthorized, dictionary.Unauthorized, err.Error())
 		return
 	}
 
 	secretID := chi.URLParam(r, "id")
 	if secretID == "" {
-		writeErrorResponse(w, http.StatusBadRequest, "INVALID_REQUEST", "Secret ID is required")
+		writeErrorResponse(w, http.StatusBadRequest, dictionary.InvalidRequest, "Secret ID is required")
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		writeErrorResponse(w, http.StatusBadRequest, "INVALID_REQUEST", "Failed to read request body")
+		writeErrorResponse(w, http.StatusBadRequest, dictionary.InvalidRequest, "Failed to read request body")
 		return
 	}
 
@@ -222,7 +224,7 @@ func (h *Handler) UpdateSecret(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal(body, &req)
 	if err != nil {
-		writeErrorResponse(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
+		writeErrorResponse(w, http.StatusBadRequest, dictionary.InvalidRequest, "Invalid request body")
 		return
 	}
 
@@ -238,19 +240,19 @@ func (h *Handler) UpdateSecret(w http.ResponseWriter, r *http.Request) {
 // DeleteSecret deletes a secret.
 func (h *Handler) DeleteSecret(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		writeErrorResponse(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Only DELETE is allowed")
+		writeErrorResponse(w, http.StatusMethodNotAllowed, dictionary.MethodNotAllowed, fmt.Sprintf(dictionary.OnlyAllowed, http.MethodDelete))
 		return
 	}
 
 	userID, err := h.extractUserID(r)
 	if err != nil {
-		writeErrorResponse(w, http.StatusUnauthorized, "UNAUTHORIZED", err.Error())
+		writeErrorResponse(w, http.StatusUnauthorized, dictionary.Unauthorized, err.Error())
 		return
 	}
 
 	secretID := chi.URLParam(r, "id")
 	if secretID == "" {
-		writeErrorResponse(w, http.StatusBadRequest, "INVALID_REQUEST", "Secret ID is required")
+		writeErrorResponse(w, http.StatusBadRequest, dictionary.InvalidRequest, "Secret ID is required")
 		return
 	}
 
