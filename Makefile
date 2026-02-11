@@ -14,6 +14,35 @@ BUILD_TIME = $(shell date -u '+%Y-%m-%d_%H:%M:%S')
 DB_USER = $(POSTGRES_USER)
 DB_PASSWORD = $(POSTGRES_PASSWORD)
 
+# Detect the operating system name (e.g., Linux, Darwin, Windows_NT)
+OS_NAME = $(shell uname -s)
+
+# Use conditional logic based on the OS
+ifeq ($(OS_NAME),Linux)
+    # Commands/variables for Linux
+    PLATFORM = linux
+else ifeq ($(OS_NAME),Darwin)
+    # Commands/variables for macOS
+    PLATFORM = darwin
+else ifeq ($(OS_NAME),Windows_NT)
+    # Commands/variables for Windows
+    PLATFORM = windows
+else
+    # Default or error for unknown OS
+    $(error Unknown operating system: $(OS_NAME))
+endif
+
+ARCH = $(shell uname -m)
+
+# Standardize some common outputs for easier conditionals
+ifeq ($(ARCH),x86_64)
+    ARCH := amd64
+else ifeq ($(ARCH),aarch64)
+    ARCH := arm64
+else ifeq ($(ARCH),i386)
+    ARCH := 386
+endif
+
 help:
 	@echo "GophKeeper - Password Manager Application"
 	@echo ""
@@ -40,16 +69,16 @@ build: server client
 server:
 	@echo "Building server..."
 	@mkdir -p $(BUILD_DIR)
-	env GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_SERVER) ./cmd/gophkeep
-	env GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_SERVER)-windows-amd64.exe ./cmd/gophkeep
+	env GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_SERVER)_linux-amd64 ./cmd/gophkeep
+	env GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_SERVER)_windows-amd64.exe ./cmd/gophkeep
 	env GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_SERVER)_darwin-arm64 ./cmd/gophkeep
 	env GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_SERVER)_darwin-amd64 ./cmd/gophkeep
 
 client:
 	@echo "Building client..."
 	@mkdir -p $(BUILD_DIR)
-	env GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_CLIENT) ./cmd/gophkeep
-	env GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_CLIENT)-windows-amd64.exe ./cmd/gophkeep
+	env GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_CLIENT)_linux-amd64 ./cmd/gophkeep
+	env GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_CLIENT)_windows-amd64.exe ./cmd/gophkeep
 	env GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_CLIENT)_darwin-arm64 ./cmd/gophkeep
 	env GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)" -o $(BUILD_DIR)/$(BINARY_CLIENT)_darwin-amd64 ./cmd/gophkeep
 
@@ -88,7 +117,7 @@ run-server:
 
 run-client:
 	@echo "Starting client..."
-	@./$(BUILD_DIR)/gophkeeper client
+	@./$(BUILD_DIR)/gophkeeper-client_$(PLATFORM)-$(ARCH) client
 
 fmt:
 	@echo "Formatting code..."

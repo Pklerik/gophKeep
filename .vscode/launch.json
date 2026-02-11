@@ -54,6 +54,7 @@
                 "-l",
                 "DEBUG",
             ],
+            "envFile": "${workspaceFolder}/.env"
         },
     ]
 }
