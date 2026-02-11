@@ -82,13 +82,13 @@ install: build
 	@cp $(BUILD_DIR)/$(BINARY_CLIENT) $(GOPATH)/bin/
 	@echo "✓ Installation complete"
 
-run-server: server
+run-server:
 	@echo "Starting server..."
-	@./$(BUILD_DIR)/$(BINARY_SERVER) server -a 0.0.0.0:8080
+	@./$(BUILD_DIR)/gophkeeper server -a 0.0.0.0:8080
 
-run-client: client
+run-client:
 	@echo "Starting client..."
-	@./$(BUILD_DIR)/$(BINARY_CLIENT) client
+	@./$(BUILD_DIR)/gophkeeper client
 
 fmt:
 	@echo "Formatting code..."

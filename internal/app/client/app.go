@@ -26,7 +26,7 @@ type App struct {
 // NewApp creates a new client application.
 func NewApp(cfg config.Config) *App {
 	return &App{
-		client: httpclient.NewHTTPClient(cfg.ServerURL, cfg.Timeout),
+		client: httpclient.NewHTTPClient(cfg.ServerURL, cfg.Timeout, cfg.EncryptionKey, cfg.EncryptionSalt),
 		config: cfg,
 	}
 }

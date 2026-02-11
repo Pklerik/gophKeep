@@ -51,8 +51,6 @@
             "asRoot": true,
             "args": [
                 "client",
-                "--u",
-                ":8080",
                 "-l",
                 "DEBUG",
             ],

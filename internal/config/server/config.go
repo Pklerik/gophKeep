@@ -19,7 +19,7 @@ type Config struct {
 	DatabasePath  string        `json:"database_path" env:"DATABASE_PATH"`
 	DatabaseURL   dbconf.Config `json:"database_url" env:"DATABASE_URL"`
 	LoggerConfig  zap.Config    `json:"logger_config" env:"LOGGER_CONFIG"`
-	secretKey     string        `json:"-" env:"SECRET_KEY"`
+	SecretKey     string        `json:"-" env:"SECRET_KEY"`
 	LogLevel      string        `json:"log_level" env:"LOG_LEVEL"`
 	Timeout       time.Duration `json:"timeout" env:"TIMEOUT"`
 	TLS           bool          `json:"enable_https" env:"ENABLE_HTTPS"`
@@ -33,7 +33,7 @@ func LoadConfig() Config {
 	cfg := Config{
 		ServerAddress: "localhost:8080",
 		DatabasePath:  "./gophkeeper.db",
-		secretKey:     "default-secret-key",
+		SecretKey:     "default-secret-key",
 		LogLevel:      "info",
 		Timeout:       30 * time.Second,
 		PasswordSalt:  []byte("default-password-salt"),
@@ -55,7 +55,7 @@ func LoadConfig() Config {
 	flag.StringVar(&cfg.DatabasePath, "d", cfg.DatabasePath, "Database path")
 	flag.Var(&cfg.DatabaseURL, "dsn", "Database URL")
 	flag.DurationVar(&cfg.Timeout, "t", cfg.Timeout, "Set timeout")
-	flag.StringVar(&cfg.secretKey, "k", cfg.secretKey, "Secret key")
+	flag.StringVar(&cfg.SecretKey, "k", cfg.SecretKey, "Secret key")
 	flag.StringVar(&cfg.LogLevel, "l", cfg.LogLevel, "Log level")
 	flag.BoolVar(&cfg.TLS, "s", cfg.TLS, "Enable TLS")
 	flag.StringVar(&cfg.CertFile, "c", "", "Certificate file (for TLS)")
@@ -77,7 +77,7 @@ func LoadConfig() Config {
 	}
 
 	// Set secret key for authentication.
-	auth.SetSecretKey(cfg.secretKey)
+	auth.SetSecretKey(cfg.SecretKey)
 
 	return cfg
 }

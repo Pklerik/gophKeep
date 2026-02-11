@@ -16,8 +16,8 @@ import (
 
 // EncryptAES encrypts data using AES-256-GCM.
 // The returned value is base64 encoded and includes the nonce.
-func EncryptAES(plaintext, password string) (string, error) {
-	key := deriveKey(password)
+func EncryptAES(plaintext, password, salt string) (string, error) {
+	key := deriveKey(password, salt)
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -41,8 +41,8 @@ func EncryptAES(plaintext, password string) (string, error) {
 
 // DecryptAES decrypts data encrypted with EncryptAES.
 // The input should be base64 encoded.
-func DecryptAES(ciphertextB64, password string) (string, error) {
-	key := deriveKey(password)
+func DecryptAES(ciphertextB64, password, salt string) (string, error) {
+	key := deriveKey(password, salt)
 
 	data, err := base64.StdEncoding.DecodeString(ciphertextB64)
 	if err != nil {
@@ -86,7 +86,6 @@ func VerifyPassword(password, hash string, salt []byte) bool {
 }
 
 // deriveKey derives a 32-byte encryption key from a password using PBKDF2.
-func deriveKey(password string) []byte {
-	salt := []byte("gophkeeper-encryption-salt")
-	return pbkdf2.Key([]byte(password), salt, 4096, 32, sha256.New)
+func deriveKey(password, salt string) []byte {
+	return pbkdf2.Key([]byte(password), []byte(salt), 4096, 32, sha256.New)
 }

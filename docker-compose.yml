@@ -24,6 +24,9 @@ services:
     environment:
       SERVER_ADDRESS: 0.0.0.0:8080
       DATABASE_URL: postgres://gophkeeper:gophkeeper_password@postgres:5432/gophkeeper?sslmode=disable
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: ${DATABASE_URL}
+      GOOSE_MIGRATION_DIR: /migrations
       SECRET_KEY: ${SECRET_KEY:-your-secret-key-here}
       LOG_LEVEL: info
     ports:

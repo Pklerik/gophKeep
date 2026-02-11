@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Pklerik/gophKeep/internal/cryptography"
 	"github.com/Pklerik/gophKeep/internal/models"
 
 	"github.com/go-resty/resty/v2"
@@ -12,13 +13,17 @@ import (
 
 // HTTPClient provides HTTP methods for server communication.
 type HTTPClient struct {
-	httpClient *resty.Client
+	httpClient    *resty.Client
+	encryptionKey []byte
+	salt          []byte
 }
 
 // NewHTTPClient creates a new HTTP client.
-func NewHTTPClient(baseURL string, timeout time.Duration) *HTTPClient {
+func NewHTTPClient(baseURL string, timeout time.Duration, encryptionKey, salt []byte) *HTTPClient {
 	return &HTTPClient{
-		httpClient: resty.New().SetTimeout(timeout).SetBaseURL(baseURL),
+		httpClient:    resty.New().SetTimeout(timeout).SetBaseURL(baseURL),
+		encryptionKey: encryptionKey,
+		salt:          salt,
 	}
 }
 
@@ -66,10 +71,15 @@ func (c *HTTPClient) Login(username, password string) (*models.AuthResponse, err
 
 // CreateSecret creates a new secret.
 func (c *HTTPClient) CreateSecret(secretType models.SecretType, title, data, metadata string) (*models.Secret, error) {
+	encData, err := cryptography.EncryptAES(data, string(c.encryptionKey), string(c.salt))
+	if err != nil {
+		return nil, err
+	}
+
 	req := map[string]interface{}{
 		"type":     secretType,
 		"title":    title,
-		"data":     data,
+		"data":     encData,
 		"metadata": metadata,
 	}
 
@@ -88,7 +98,7 @@ func (c *HTTPClient) CreateSecret(secretType models.SecretType, title, data, met
 
 // GetSecret retrieves a secret by ID.
 func (c *HTTPClient) GetSecret(id string) (*models.Secret, error) {
-	resp, err := c.get(fmt.Sprintf("/api/v1/secrets/get?id=%s", id))
+	resp, err := c.get(fmt.Sprintf("/api/v1/secrets/%s", id))
 	if err != nil {
 		return nil, err
 	}
@@ -97,6 +107,11 @@ func (c *HTTPClient) GetSecret(id string) (*models.Secret, error) {
 	if err := json.Unmarshal(resp, &secret); err != nil {
 		return nil, fmt.Errorf("failed to parse secret response: %w", err)
 	}
+	decData, err := cryptography.DecryptAES(string(secret.Data), string(c.encryptionKey), string(c.salt))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt secret data: %w", err)
+	}
+	secret.Data = []byte(decData)
 
 	return &secret, nil
 }
@@ -118,14 +133,18 @@ func (c *HTTPClient) ListSecrets() ([]models.Secret, error) {
 
 // UpdateSecret updates an existing secret.
 func (c *HTTPClient) UpdateSecret(id string, secretType models.SecretType, title, data, metadata string) (*models.Secret, error) {
+	encData, err := cryptography.EncryptAES(data, string(c.encryptionKey), string(c.salt))
+	if err != nil {
+		return nil, err
+	}
 	req := map[string]interface{}{
 		"type":     secretType,
 		"title":    title,
-		"data":     data,
+		"data":     encData,
 		"metadata": metadata,
 	}
 
-	resp, err := c.putWithAuth(fmt.Sprintf("/api/v1/secrets/update?id=%s", id), req)
+	resp, err := c.putWithAuth(fmt.Sprintf("/api/v1/secrets/%s", id), req)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +159,7 @@ func (c *HTTPClient) UpdateSecret(id string, secretType models.SecretType, title
 
 // DeleteSecret deletes a secret.
 func (c *HTTPClient) DeleteSecret(id string) error {
-	_, err := c.deleteWithAuth(fmt.Sprintf("/api/v1/secrets/delete?id=%s", id))
+	_, err := c.deleteWithAuth(fmt.Sprintf("/api/v1/secrets/%s", id))
 	return err
 }
 
@@ -216,9 +235,6 @@ func (c *HTTPClient) deleteWithAuth(endpoint string) ([]byte, error) {
 	}
 
 	respBody := resp.Body()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
 
 	if resp.StatusCode() >= 400 {
 		var errResp models.ErrorResponse

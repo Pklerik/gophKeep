@@ -31,7 +31,7 @@ type Secret struct {
 	UserID    string     `json:"user_id"`
 	Type      SecretType `json:"type"`
 	Title     string     `json:"title"`
-	Data      []byte     `json:"-"` // Encrypted data
+	Data      []byte     `json:"data"` // Encrypted data
 	Metadata  string     `json:"metadata"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`

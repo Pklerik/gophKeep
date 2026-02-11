@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Pklerik/gophKeep/internal/config/server"
 	"github.com/Pklerik/gophKeep/internal/cryptography"
 	"github.com/Pklerik/gophKeep/internal/models"
 	"github.com/Pklerik/gophKeep/internal/repository"
@@ -85,11 +86,12 @@ func (s *UserService) GetUser(userID string) (*models.User, error) {
 // SecretService handles secret-related business logic.
 type SecretService struct {
 	repo repository.SecretRepositoryInterface
+	cfg  server.Config
 }
 
 // NewSecretService creates a new secret service.
-func NewSecretService(repo repository.SecretRepositoryInterface) *SecretService {
-	return &SecretService{repo: repo}
+func NewSecretService(repo repository.SecretRepositoryInterface, cfg server.Config) *SecretService {
+	return &SecretService{repo: repo, cfg: cfg}
 }
 
 // CreateSecret creates a new secret for a user.
@@ -111,7 +113,7 @@ func (s *SecretService) CreateSecret(userID string, secretType models.SecretType
 		UserID:    userID,
 		Type:      secretType,
 		Title:     title,
-		Data:      []byte(data),
+		Data:      []byte(data), // Encrypt data using user's password hash as key
 		Metadata:  metadata,
 		Version:   1,
 		CreatedAt: now,

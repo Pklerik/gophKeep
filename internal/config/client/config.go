@@ -12,11 +12,13 @@ import (
 
 // Config represents client configuration.
 type Config struct {
-	ServerURL    string
-	ClientDBPath string
-	LoggerConfig zap.Config
-	Timeout      time.Duration
-	LogLevel     string
+	ServerURL      string
+	ClientDBPath   string
+	LoggerConfig   zap.Config
+	Timeout        time.Duration
+	LogLevel       string
+	EncryptionKey  []byte
+	EncryptionSalt []byte
 }
 
 // LoadConfig loads client configuration from environment variables and flags.
@@ -34,6 +36,8 @@ func LoadConfig() Config {
 			OutputPaths:      []string{"stdout"},
 			ErrorOutputPaths: []string{"stderr"},
 		},
+		EncryptionKey:  []byte("don't use base encryption password"), // In production, use a secure, random key
+		EncryptionSalt: []byte("don't use base salt"),                // In production, use a secure, random salt
 	}
 
 	// Load from environment variables
@@ -42,6 +46,16 @@ func LoadConfig() Config {
 	}
 	if dbPath := os.Getenv("CLIENT_DB_PATH"); dbPath != "" {
 		cfg.ClientDBPath = dbPath
+	}
+
+	encryptionKey := os.Getenv("ENCRYPTION_KEY")
+	if encryptionKey != "" {
+		cfg.EncryptionKey = []byte(encryptionKey)
+	}
+
+	encryptionSalt := os.Getenv("ENCRYPTION_SALT")
+	if encryptionSalt != "" {
+		cfg.EncryptionSalt = []byte(encryptionSalt)
 	}
 
 	// Load from command line flags

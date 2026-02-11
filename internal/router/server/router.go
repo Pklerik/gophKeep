@@ -48,7 +48,7 @@ func (sr *ServerRouter) ConfigureRouter(ctx context.Context, cfg config.Config) 
 
 	// Create services
 	userService := service.NewUserService(userRepo, cfg.PasswordSalt)
-	secretService := service.NewSecretService(secretRepo)
+	secretService := service.NewSecretService(secretRepo, cfg)
 
 	// Create handlers
 	h := handler.NewHandler(userService, secretService)
