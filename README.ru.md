@@ -36,7 +36,7 @@ GophKeeper представляет собой надежное и безопа�
 ## 📋 Требования
 
 - **Go**: 1.25 или выше
-- **SQLite3**
+- **Postgres 16-alpine**
 - **Платформа**: Linux, macOS, Windows
 
 ## 🚀 Быстрый старт
@@ -226,7 +226,7 @@ gophKeep/
 |-----------|---------|
 | **Cryptography** | AES-256-GCM шифрование, PBKDF2 хеширование |
 | **Auth** | JWT токены, 24-часовое время жизни |
-| **Repository** | Доступ к SQLite БД |
+| **Repository** | Доступ к Postgres БД |
 | **Service** | Бизнес-логика приложения |
 | **Handler** | HTTP обработчики REST API |
 | **Router** | Маршрутизация запросов |

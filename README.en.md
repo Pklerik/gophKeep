@@ -36,7 +36,7 @@ All data supports arbitrary text metadata.
 ## 📋 Requirements
 
 - **Go**: 1.25 or higher
-- **SQLite3**
+- **Postgres 16-alpine**
 - **Platform**: Linux, macOS, Windows
 
 ## 🚀 Quick Start
