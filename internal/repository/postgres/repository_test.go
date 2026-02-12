@@ -4,6 +4,9 @@ package postgresrepository_test
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -39,6 +42,26 @@ func (suite *RepositoryTestSuite) SetupSuite() {
 			Options:  map[string]string{"sslmode": "disable", "search_path": "gophkeeper"},
 		},
 	}
+
+	pwd, err := os.Getwd()
+	assert.NoError(suite.T(), err)
+	composePath := filepath.Join(pwd, "testdata", "docker-compose-tests.yml")
+	fmt.Printf("Using docker-compose file: %s\n", composePath)
+	cmd := exec.Command("docker-compose", "-f", composePath, "up", "-d")
+	err = cmd.Run()
+	assert.NoError(suite.T(), err)
+
+	// Wait for the database to be ready
+	for i := 0; i < 10; i++ {
+		conn, err := repository.ConnectDB(cfg)
+		if err == nil {
+			conn.Close()
+			time.Sleep(2 * time.Second)
+			break
+		}
+		time.Sleep(2 * time.Second)
+	}
+
 	db, err := repository.ConnectDB(cfg)
 	suite.NoError(err)
 
@@ -50,7 +73,11 @@ func (suite *RepositoryTestSuite) SetupSuite() {
 	suite.secretRepo = postgresrepository.NewSecretRepository(db)
 
 	suite.T().Cleanup(func() {
+
 		db.Exec("DROP SCHEMA IF EXISTS \"%s\" CASCADE;", cfg.DatabaseURL.GetOptions()["search_path"])
+		cmd := exec.Command("docker-compose", "-f", composePath, "down", "-v")
+		err = cmd.Run()
+		assert.NoError(suite.T(), err)
 		db.Close()
 	})
 }

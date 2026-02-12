@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org)
-[![Coverage Status](https://img.shields.io/badge/Coverage-70%25%2B-green)](https://github.com/Pklerik/gophKeep)
+[![Coverage Status](https://img.shields.io/badge/Coverage-60%25%2B-green)](https://github.com/Pklerik/gophKeep)
 
 GophKeeper представляет собой надежное и безопасное приложение для управления паролями, реализованное на языке Go. Приложение состоит из клиента и сервера, позволяя пользователям безопасно хранить и синхронизировать приватные данные.
 

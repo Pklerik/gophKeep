@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/Pklerik/gophKeep/internal/auth"
+	"github.com/Pklerik/gophKeep/internal/config/server"
 	"github.com/Pklerik/gophKeep/internal/cryptography"
 	"github.com/Pklerik/gophKeep/internal/models"
 	repoMocks "github.com/Pklerik/gophKeep/internal/repository/mocks"
@@ -33,7 +34,7 @@ func TestRegister_MethodNotAllowed(t *testing.T) {
 	defer ctrl.Finish()
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	req := httptest.NewRequest(http.MethodGet, "/register", nil)
@@ -52,7 +53,7 @@ func TestRegister_Success(t *testing.T) {
 	ur.EXPECT().CreateUser(gomock.Any(), "newuser", gomock.Any()).Return(nil)
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	auth.SetSecretKey("handler-test")
@@ -81,7 +82,7 @@ func TestLogin_Success(t *testing.T) {
 	ur.EXPECT().GetUserByUsername("u1").Return(user, nil)
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	auth.SetSecretKey("handler-test")
@@ -128,7 +129,7 @@ func TestCreateGetListUpdateDeleteSecret_Flow(t *testing.T) {
 	sr.EXPECT().DeleteSecret("sid1", "uid1").Return(nil)
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	// CreateSecret
@@ -185,7 +186,7 @@ func TestExtractUserID_MissingAuth(t *testing.T) {
 	defer ctrl.Finish()
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -200,7 +201,7 @@ func TestRegister_InvalidJSON(t *testing.T) {
 	defer ctrl.Finish()
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader([]byte("notjson")))
@@ -218,7 +219,7 @@ func TestRegister_CreateUserError(t *testing.T) {
 	ur.EXPECT().CreateUser(gomock.Any(), "uerr", gomock.Any()).Return(errors.New("dbfail"))
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	body := models.AuthRequest{Username: "uerr", Password: "strongpass"}
@@ -235,7 +236,7 @@ func TestLogin_InvalidJSON(t *testing.T) {
 	defer ctrl.Finish()
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader([]byte("badjson")))
@@ -252,7 +253,7 @@ func TestLogin_AuthenticationFailed(t *testing.T) {
 	ur.EXPECT().GetUserByUsername("nouser").Return(nil, errors.New("not found"))
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	body := models.AuthRequest{Username: "nouser", Password: "pw"}
@@ -269,7 +270,7 @@ func TestCreateSecret_UnauthorizedAndInvalidBody(t *testing.T) {
 	defer ctrl.Finish()
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	// Unauthorized: invalid token
@@ -294,7 +295,7 @@ func TestGetUpdateDelete_MissingID(t *testing.T) {
 	defer ctrl.Finish()
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	auth.SetSecretKey("handler-test")
@@ -334,7 +335,7 @@ func TestCreateSecret_ServiceError(t *testing.T) {
 	sr.EXPECT().CreateSecret(gomock.Any()).Return(errors.New("create fail"))
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	createReq := map[string]interface{}{"type": models.SecretTypeText, "title": "t", "data": "d", "metadata": "m"}
@@ -356,7 +357,7 @@ func TestGetSecret_NotFound(t *testing.T) {
 	sr.EXPECT().GetSecretByID("nosuch").Return(nil, errors.New("not found"))
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	req := httptest.NewRequest(http.MethodGet, "/secret/nosuch", nil)
@@ -379,7 +380,7 @@ func TestListSecrets_Error(t *testing.T) {
 	sr.EXPECT().GetUserSecrets("uid1").Return(nil, errors.New("list fail"))
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	req := httptest.NewRequest(http.MethodGet, "/secrets", nil)
@@ -401,7 +402,7 @@ func TestUpdateSecret_UpdateFail(t *testing.T) {
 	sr.EXPECT().UpdateSecret(gomock.Any()).Return(errors.New("update fail"))
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	updateReq := map[string]interface{}{"type": models.SecretTypeText, "title": "t2", "data": "d2", "metadata": "m2"}
@@ -426,7 +427,7 @@ func TestDeleteSecret_Fail(t *testing.T) {
 	sr.EXPECT().DeleteSecret("sid1", "uid1").Return(errors.New("delete fail"))
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	req := httptest.NewRequest(http.MethodDelete, "/secret/sid1", nil)
@@ -444,7 +445,7 @@ func TestMethodNotAllowed_ForHandlers(t *testing.T) {
 	defer ctrl.Finish()
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	// Login expects POST
@@ -494,7 +495,7 @@ func TestListSecrets_NilResults(t *testing.T) {
 	sr.EXPECT().GetUserSecrets("uid1").Return(nil, nil)
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	req := httptest.NewRequest(http.MethodGet, "/secrets", nil)
@@ -514,7 +515,7 @@ func TestUpdateSecret_InvalidJSON(t *testing.T) {
 	token, _, _ := auth.GenerateToken("uid1")
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	req := httptest.NewRequest(http.MethodPut, "/secret?id=sid1", bytes.NewReader([]byte("badjson")))
@@ -537,7 +538,7 @@ func TestCreateSecret_ReadError(t *testing.T) {
 	token, _, _ := auth.GenerateToken("uid1")
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	req := httptest.NewRequest(http.MethodPost, "/secret", errReadCloser{err: errors.New("boom")})
@@ -555,7 +556,7 @@ func TestUpdateSecret_ReadError(t *testing.T) {
 	token, _, _ := auth.GenerateToken("uid1")
 
 	uh := service.NewUserService(ur, salt)
-	sh := service.NewSecretService(sr)
+	sh := service.NewSecretService(sr, server.Config{})
 	h := NewHandler(uh, sh)
 
 	req := httptest.NewRequest(http.MethodPut, "/secret?id=sid1", errReadCloser{err: errors.New("boom")})

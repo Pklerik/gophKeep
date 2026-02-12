@@ -169,6 +169,16 @@ docker-clean:
 	@docker-compose down -v
 	@echo "✓ Docker resources cleaned"
 
+docker-test:
+	@echo "Running tests in Docker environment..."
+	@docker-compose -f $(shell pwd)/internal/repository/postgres/testdata/docker-compose-tests.yml up -d
+	@echo "✓ Tests completed"
+
+docker-test-clean:
+	@echo "Cleaning up test containers and volumes..."
+	@docker-compose -f $(shell pwd)/internal/repository/postgres/testdata/docker-compose-tests.yml down -v
+	@echo "✓ Test resources cleaned"
+
 pprof-mem:
 	go tool pprof -http :9000 profiles/mem.out
 

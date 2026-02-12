@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Pklerik/gophKeep/internal/config/server"
 	"github.com/Pklerik/gophKeep/internal/cryptography"
 	"github.com/Pklerik/gophKeep/internal/models"
 	"github.com/Pklerik/gophKeep/internal/repository/mocks"
@@ -32,7 +33,7 @@ func (suite *ServiceTestSuite) SetupTest() {
 	suite.mockSecretRepo = mocks.NewMockSecretRepositoryInterface(suite.ctrl)
 
 	suite.userService = NewUserService(suite.mockUserRepo, testSalt)
-	suite.secretService = NewSecretService(suite.mockSecretRepo)
+	suite.secretService = NewSecretService(suite.mockSecretRepo, server.Config{})
 }
 
 // TearDownTest finishes gomock controller.

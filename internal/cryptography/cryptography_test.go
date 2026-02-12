@@ -7,18 +7,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var salt = []byte("salt")
-
 // TestEncryptDecrypt tests encryption and decryption.
 func TestEncryptDecrypt(t *testing.T) {
 	plaintext := "secret message"
 	password := "mypassword"
+	salt := "somesalt"
 
-	encrypted, err := EncryptAES(plaintext, password)
+	encrypted, err := EncryptAES(plaintext, password, salt)
 	assert.NoError(t, err)
 	assert.NotEqual(t, plaintext, encrypted)
 
-	decrypted, err := DecryptAES(encrypted, password)
+	decrypted, err := DecryptAES(encrypted, password, salt)
 	assert.NoError(t, err)
 	assert.Equal(t, plaintext, decrypted)
 }
@@ -27,15 +26,17 @@ func TestEncryptDecrypt(t *testing.T) {
 func TestDecryptWrongPassword(t *testing.T) {
 	plaintext := "secret"
 	password := "correct"
+	salt := "somesalt"
 
-	encrypted, _ := EncryptAES(plaintext, password)
-	_, err := DecryptAES(encrypted, "wrong")
+	encrypted, _ := EncryptAES(plaintext, password, salt)
+	_, err := DecryptAES(encrypted, "wrong", salt)
 	assert.Error(t, err)
 }
 
 // TestHashPassword tests password hashing.
 func TestHashPassword(t *testing.T) {
 	password := "mypassword"
+	salt := []byte("somesalt")
 	hash := HashPassword(password, salt)
 
 	assert.NotEqual(t, password, hash)

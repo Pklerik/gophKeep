@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org)
-[![Coverage Status](https://img.shields.io/badge/Coverage-70%25%2B-green)](https://github.com/Pklerik/gophKeep)
+[![Coverage Status](https://img.shields.io/badge/Coverage-60%25%2B-green)](https://github.com/Pklerik/gophKeep)
 
 GophKeeper is a reliable and secure password management application implemented in Go. The application consists of a client and a server, allowing users to securely store and synchronize private data.
 
