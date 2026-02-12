@@ -35,3 +35,4 @@ go.work.sum
 /cmd/gophkeep/gophkeeper
 /cmd/gophkeep/gophkeeper.db
 /cmd/gophkeep/gophkeeper.exe
+bin/
