@@ -147,13 +147,13 @@ Content-Type: application/json
 
 #### Get Secret
 ```http
-GET /api/v1/secrets/get?id=<secret_id>
+GET /api/v1/secrets/<secret_id>
 Authorization: Bearer <token>
 ```
 
 #### Update Secret
 ```http
-PUT /api/v1/secrets/update?id=<secret_id>
+PUT /api/v1/secrets/<secret_id>
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -167,7 +167,7 @@ Content-Type: application/json
 
 #### Delete Secret
 ```http
-DELETE /api/v1/secrets/delete?id=<secret_id>
+DELETE /api/v1/secrets/<secret_id>
 Authorization: Bearer <token>
 ```
 
