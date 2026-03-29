@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gophkeeper-postgres-test
+    environment:
+      POSTGRES_DB: gophkeeper_test
+      POSTGRES_USER: gophkeeper_test
+      POSTGRES_PASSWORD: secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gophkeeper_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+  test_postgres_data:

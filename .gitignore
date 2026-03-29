@@ -28,5 +28,11 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+
+# local binaries
+/cmd/gophkeep/gophkeeper
+/cmd/gophkeep/gophkeeper.db
+/cmd/gophkeep/gophkeeper.exe
+bin/

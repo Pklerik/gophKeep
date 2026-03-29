@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gophkeeper-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gophkeeper}
+      POSTGRES_USER: ${POSTGRES_USER:-gophkeeper}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gophkeeper_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gophkeeper"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gophkeeper-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gophkeeper-server
+    environment:
+      SERVER_ADDRESS: 0.0.0.0:8080
+      DATABASE_URL: postgres://gophkeeper:gophkeeper_password@postgres:5432/gophkeeper?sslmode=disable
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: ${DATABASE_URL}
+      GOOSE_MIGRATION_DIR: /migrations
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-here}
+      LOG_LEVEL: info
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
